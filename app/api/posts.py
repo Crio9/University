@@ -116,6 +116,7 @@ async def get_smart_feed(
             or "возможност" in category_name
         )
 
+
         has_matching_interest = post.id in matching_post_ids
 
         if (
