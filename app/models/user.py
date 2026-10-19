@@ -40,3 +40,6 @@ class User(Base):
         "StaffProfile", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
     posts = relationship("Post", back_populates="author")
+    saved_posts = relationship(
+        "UserSavedPost", back_populates="user", cascade="all, delete-orphan"
+    )

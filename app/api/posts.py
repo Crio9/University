@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
@@ -8,8 +10,20 @@ from app.models.post import Post
 from app.models.user import User
 from app.schemas.post import PostCreate, PostRead
 from app.services.feed import get_personalized_feed
+from app.services.saved_posts import (
+    list_saved_posts,
+    saved_post_ids,
+    save_post,
+    unsave_post,
+)
 
 router = APIRouter(prefix="/posts", tags=["posts"])
+
+
+def _to_read(post: Post, *, is_saved: bool = False) -> PostRead:
+    data = PostRead.model_validate(post)
+    data.is_saved = is_saved
+    return data
 
 
 @router.post("", response_model=PostRead, status_code=201)
@@ -49,7 +63,16 @@ def create_post(
         .filter(Post.id == post.id)
         .one()
     )
-    return PostRead.model_validate(post)
+    return _to_read(post, is_saved=False)
+
+
+@router.get("/saved", response_model=list[PostRead])
+def saved_posts(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[PostRead]:
+    posts = list_saved_posts(db, current_user.id)
+    return [_to_read(post, is_saved=True) for post in posts]
 
 
 @router.get("/feed", response_model=list[PostRead])
@@ -58,4 +81,35 @@ def posts_feed(
     current_user: User = Depends(get_current_user),
 ) -> list[PostRead]:
     posts = get_personalized_feed(db, current_user)
-    return [PostRead.model_validate(post) for post in posts]
+    saved = saved_post_ids(db, current_user.id)
+    return [_to_read(post, is_saved=post.id in saved) for post in posts]
+
+
+@router.post("/{post_id}/save", response_model=PostRead)
+def save_post_endpoint(
+    post_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> PostRead:
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if post is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+    save_post(db, current_user.id, post_id)
+    db.commit()
+    db.refresh(post)
+    return _to_read(post, is_saved=True)
+
+
+@router.delete("/{post_id}/save", response_model=PostRead)
+def unsave_post_endpoint(
+    post_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> PostRead:
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if post is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+    unsave_post(db, current_user.id, post_id)
+    db.commit()
+    db.refresh(post)
+    return _to_read(post, is_saved=False)

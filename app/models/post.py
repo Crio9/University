@@ -5,6 +5,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -43,12 +44,20 @@ class Post(Base):
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     body: Mapped[str] = mapped_column(Text, nullable=False)
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     category_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("categories.id", ondelete="RESTRICT"), nullable=False
     )
     author_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
+    raw_content_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("raw_contents.id", ondelete="SET NULL"),
+        nullable=True,
+        unique=True,
+    )
+    ai_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # Targeting: empty array means "all"
     target_roles: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, default=list)
@@ -76,4 +85,8 @@ class Post(Base):
 
     category = relationship("Category", back_populates="posts")
     author = relationship("User", back_populates="posts")
+    raw_content = relationship("RawContent", back_populates="post")
     tags = relationship("Tag", secondary=post_tags, lazy="selectin")
+    saved_by = relationship(
+        "UserSavedPost", back_populates="post", cascade="all, delete-orphan"
+    )

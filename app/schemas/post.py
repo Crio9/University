@@ -38,12 +38,15 @@ class PostRead(BaseModel):
     id: UUID
     title: str
     body: str
+    summary: str | None = None
     category: CategoryRead
     tags: list[TagRead] = []
     target_roles: list[str] = []
     target_faculties: list[str] = []
     target_courses: list[int] = []
     deadline: datetime | None = None
+    ai_confidence: float | None = None
     is_published: bool
+    is_saved: bool = False
     published_at: datetime
     author_id: UUID

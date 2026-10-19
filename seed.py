@@ -6,52 +6,14 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
+from app.core.dictionaries import CANONICAL_CATEGORIES, CANONICAL_TAGS
 from app.core.security import hash_password
 from app.db.database import SessionLocal
 from app.models.dictionaries import Category, Tag
 from app.models.post import Post
 from app.models.profile import StaffProfile, StudentProfile
 from app.models.user import User, UserRole
-
-CATEGORIES = [
-    ("Новости", "news"),
-    ("Административное", "admin"),
-    ("Возможности", "opportunities"),
-]
-
-TAGS = [
-    ("Карьера", "career"),
-    ("IT", "it"),
-    ("Наука", "science"),
-    ("Спорт", "sport"),
-    ("Волонтёрство", "volunteering"),
-    ("Стипендии", "scholarships"),
-    ("Общежитие", "dormitory"),
-    ("Документы", "documents"),
-    ("Конференции", "conferences"),
-    ("Стажировки", "internships"),
-]
-
-
-def _get_or_create_category(db: Session, name: str, slug: str) -> Category:
-    item = db.query(Category).filter(Category.slug == slug).first()
-    if item:
-        return item
-    item = Category(name=name, slug=slug)
-    db.add(item)
-    db.flush()
-    return item
-
-
-def _get_or_create_tag(db: Session, name: str, slug: str) -> Tag:
-    item = db.query(Tag).filter(Tag.slug == slug).first()
-    if item:
-        return item
-    item = Tag(name=name, slug=slug)
-    db.add(item)
-    db.flush()
-    return item
-
+from app.services.dictionaries import slug_for_code, sync_reference_data
 
 def _get_or_create_user(
     db: Session,
@@ -70,10 +32,16 @@ def _get_or_create_user(
 
 
 def seed(db: Session) -> None:
+    # Reconcile the canonical reference vocabulary (idempotent).
+    sync_reference_data(db)
     categories = {
-        slug: _get_or_create_category(db, name, slug) for name, slug in CATEGORIES
+        entry.code: db.query(Category).filter(Category.slug == slug_for_code(entry.code)).one()
+        for entry in CANONICAL_CATEGORIES
     }
-    tags = {slug: _get_or_create_tag(db, name, slug) for name, slug in TAGS}
+    tags = {
+        entry.code: db.query(Tag).filter(Tag.slug == slug_for_code(entry.code)).one()
+        for entry in CANONICAL_TAGS
+    }
 
     staff = _get_or_create_user(
         db, email="staff@example.com", password="staff123", role=UserRole.STAFF
@@ -99,7 +67,7 @@ def seed(db: Session) -> None:
             course=3,
             group_name="ФИТ-301",
         )
-        profile.interests = [tags["it"], tags["career"], tags["internships"]]
+        profile.interests = [tags["CAREER"], tags["INTERNSHIP"], tags["SCIENCE"]]
         db.add(profile)
 
     student_law = _get_or_create_user(
@@ -113,7 +81,7 @@ def seed(db: Session) -> None:
             course=1,
             group_name="Ю-101",
         )
-        profile.interests = [tags["scholarships"], tags["volunteering"]]
+        profile.interests = [tags["SCHOLARSHIP"], tags["VOLUNTEERING"]]
         db.add(profile)
 
     db.flush()
@@ -125,55 +93,59 @@ def seed(db: Session) -> None:
             Post(
                 title="Открытие карьерной ярмарки",
                 body="Приглашаем студентов ФИТ на ярмарку вакансий и стажировок.",
-                category_id=categories["opportunities"].id,
+                category_id=categories["OPPORTUNITY"].id,
                 author_id=staff.id,
                 target_roles=["student"],
                 target_faculties=["ФИТ"],
                 target_courses=[],
                 deadline=now + timedelta(days=14),
-                tags=[tags["career"], tags["internships"], tags["it"]],
+                summary="Ярмарка вакансий и стажировок для студентов ФИТ.",
+                ai_confidence=0.95,
+                tags=[tags["CAREER"], tags["INTERNSHIP"]],
             ),
             Post(
                 title="Срок подачи документов на стипендию",
                 body="Не забудьте подать пакет документов до конца месяца.",
-                category_id=categories["admin"].id,
+                category_id=categories["ADMINISTRATIVE"].id,
                 author_id=staff.id,
                 target_roles=["student"],
                 target_faculties=[],
                 target_courses=[1, 2],
                 deadline=now + timedelta(days=10),
-                tags=[tags["scholarships"], tags["documents"]],
+                summary="Подать пакет документов на стипендию до конца месяца.",
+                tags=[tags["SCHOLARSHIP"], tags["DOCUMENTS"]],
             ),
             Post(
                 title="Университетские новости недели",
                 body="Короткий дайджест событий кампуса для всех студентов.",
-                category_id=categories["news"].id,
+                category_id=categories["NEWS"].id,
                 author_id=staff.id,
                 target_roles=["student"],
                 target_faculties=[],
                 target_courses=[],
-                tags=[tags["sport"], tags["volunteering"]],
+                tags=[tags["SPORT"], tags["VOLUNTEERING"]],
             ),
             Post(
                 title="Научная конференция по ИИ",
                 body="Приём тезисов на студенческую конференцию по искусственному интеллекту.",
-                category_id=categories["opportunities"].id,
+                category_id=categories["EVENT"].id,
                 author_id=staff.id,
                 target_roles=["student"],
                 target_faculties=["ФИТ"],
                 target_courses=[3, 4],
                 deadline=now + timedelta(days=30),
-                tags=[tags["science"], tags["conferences"], tags["it"]],
+                summary="Приём тезисов на студенческую конференцию по ИИ.",
+                tags=[tags["SCIENCE"], tags["CONFERENCE"], tags["RESEARCH"]],
             ),
             Post(
                 title="Правила проживания в общежитии",
                 body="Обновлённый регламент для проживающих в общежитии №2.",
-                category_id=categories["admin"].id,
+                category_id=categories["ADMINISTRATIVE"].id,
                 author_id=staff.id,
                 target_roles=["student"],
                 target_faculties=[],
                 target_courses=[],
-                tags=[tags["dormitory"], tags["documents"]],
+                tags=[tags["DORMITORY"], tags["DOCUMENTS"]],
             ),
         ]
         db.add_all(demo_posts)
