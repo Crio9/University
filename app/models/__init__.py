@@ -2,6 +2,8 @@ from app.db.base import Base
 from app.models.dictionaries import Category, Tag
 from app.models.post import Post, post_tags
 from app.models.profile import StaffProfile, StudentProfile, TeacherProfile
+from app.models.raw_content import RawContent, RawContentStatus
+from app.models.saved_post import UserSavedPost
 from app.models.student_interest import student_interests
 from app.models.user import User
 
@@ -16,4 +18,7 @@ __all__ = [
     "Tag",
     "Post",
     "post_tags",
+    "RawContent",
+    "RawContentStatus",
+    "UserSavedPost",
 ]

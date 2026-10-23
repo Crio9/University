@@ -6,6 +6,7 @@ class CategoryRead(BaseModel):
 
     id: int
     name: str
+    code: str | None = None
 
 
 class TagRead(BaseModel):
@@ -13,3 +14,4 @@ class TagRead(BaseModel):
 
     id: int
     name: str
+    code: str | None = None
