@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app.models.post import Post
 from app.models.saved_post import UserSavedPost
+
+from datetime import datetime, timezone
 
 
 def saved_post_ids(db: Session, user_id: uuid.UUID) -> set[uuid.UUID]:
@@ -58,10 +60,21 @@ def unsave_post(db: Session, user_id: uuid.UUID, post_id: uuid.UUID) -> bool:
 
 
 def list_saved_posts(db: Session, user_id: uuid.UUID) -> list[Post]:
+    now = datetime.now(timezone.utc)
+
+    deadline_priority = case(
+        (Post.deadline >= now, 0),
+        else_=1,
+    )
+
     return (
         db.query(Post)
         .join(UserSavedPost, UserSavedPost.post_id == Post.id)
         .filter(UserSavedPost.user_id == user_id)
-        .order_by(UserSavedPost.created_at.desc())
+        .order_by(
+            deadline_priority,
+            Post.deadline.asc().nulls_last(),
+            UserSavedPost.created_at.desc(),
+        )
         .all()
     )

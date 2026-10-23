@@ -8,3 +8,6 @@ api_router.include_router(profiles.router)
 api_router.include_router(posts.router)
 api_router.include_router(dictionaries.router)
 api_router.include_router(ingest.router)
+
+from app.api import telegram_ingest
+api_router.include_router(telegram_ingest.router)
