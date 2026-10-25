@@ -1,0 +1,29 @@
+name: Backend tests
+
+on:
+  push:
+    branches:
+      - feature/telegram-ingestion-develop
+  pull_request:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run full test suite
+        env:
+          JWT_SECRET: github-ci-only-not-for-production
+          DEBUG: 'false'
+        run: python -m pytest -q
