@@ -10,6 +10,11 @@ class Category(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    # Machine code from the approved vocabulary (ACADEMIC, OPPORTUNITY, ...).
+    # Nullable so pre-existing rows and manually created content keep working.
+    code: Mapped[str | None] = mapped_column(
+        String(32), unique=True, nullable=True, index=True
+    )
 
 
 class Tag(Base):
@@ -17,3 +22,7 @@ class Tag(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    # Machine code from the approved vocabulary (CAREER, HACKATHON, ...).
+    code: Mapped[str | None] = mapped_column(
+        String(32), unique=True, nullable=True, index=True
+    )

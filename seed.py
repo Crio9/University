@@ -10,42 +10,19 @@ from app.models.post import Post
 from app.models.profile import StaffProfile, StudentProfile, TeacherProfile
 from app.models.student_interest import student_interests
 from app.models.user import User
+from app.services.dictionaries import sync_reference_data
 
 
 async def seed_data():
     async with AsyncSessionLocal() as db:
-        category_names = ["Новости", "Административное", "Возможности"]
-        categories = {}
-        for name in category_names:
-            res = await db.execute(select(Category).where(Category.name == name))
-            cat = res.scalar_one_or_none()
-            if not cat:
-                cat = Category(name=name)
-                db.add(cat)
-                await db.flush()
-            categories[name] = cat
+        # Reconcile the canonical vocabulary (idempotent; reuses legacy rows).
+        await sync_reference_data(db)
+        await db.flush()
 
-        tag_names = [
-            "Карьера",
-            "ИТ",
-            "Спорт",
-            "Наука",
-            "Волонтерство",
-            "Стипендии",
-            "Общежитие",
-            "Документы",
-            "Конференции",
-            "Стажировки",
-        ]
-        tags = {}
-        for name in tag_names:
-            res = await db.execute(select(Tag).where(Tag.name == name))
-            tag = res.scalar_one_or_none()
-            if not tag:
-                tag = Tag(name=name)
-                db.add(tag)
-                await db.flush()
-            tags[name] = tag
+        cats_res = await db.execute(select(Category))
+        categories = {cat.code: cat for cat in cats_res.scalars().all() if cat.code}
+        tags_res = await db.execute(select(Tag))
+        tags = {tag.code: tag for tag in tags_res.scalars().all() if tag.code}
 
         users_data = [
             {
@@ -96,8 +73,8 @@ async def seed_data():
                     await db.execute(
                         student_interests.insert().values(
                             [
-                                {"student_id": user.id, "tag_id": tags["ИТ"].id},
-                                {"student_id": user.id, "tag_id": tags["Карьера"].id},
+                                {"student_id": user.id, "tag_id": tags["SCIENCE"].id},
+                                {"student_id": user.id, "tag_id": tags["CAREER"].id},
                             ]
                         )
                     )
@@ -125,31 +102,34 @@ async def seed_data():
             {
                 "title": "Грант на ИТ-стартап",
                 "content": "Подача заявок на получение гранта для студентов ИТ-направлений.",
-                "category": categories["Возможности"],
+                "summary": "Грант для студентов ИТ-направлений, заявки до 5 дней.",
+                "category": categories["OPPORTUNITY"],
                 "author_id": users["staff"].id,
                 "importance": "standard",
                 "deadline": now + timedelta(days=5),
                 "target_faculty": "ФИСТ",
                 "target_course": 2,
                 "target_program": "ПМИ",
-                "tags": [tags["ИТ"], tags["Карьера"]],
+                "tags": [tags["SCIENCE"], tags["CAREER"]],
             },
             {
                 "title": "Обходной лист выпускника",
                 "content": "Сдача обходных листов перед защитой ВКР.",
-                "category": categories["Административное"],
+                "summary": "Выпускникам необходимо сдать обходной лист перед защитой ВКР.",
+                "category": categories["ADMINISTRATIVE"],
                 "author_id": users["staff"].id,
                 "importance": "standard",
                 "deadline": None,
                 "target_faculty": None,
                 "target_course": 4,
                 "target_program": None,
-                "tags": [tags["Документы"]],
+                "tags": [tags["DOCUMENTS"], tags["THESIS"]],
             },
             {
                 "title": "День открытых дверей",
                 "content": "Приглашаем всех на общеуниверситетский день открытых дверей.",
-                "category": categories["Новости"],
+                "summary": "Общеуниверситетский день открытых дверей.",
+                "category": categories["EVENT"],
                 "author_id": users["staff"].id,
                 "importance": "standard",
                 "deadline": None,
@@ -161,26 +141,28 @@ async def seed_data():
             {
                 "title": "Стипендия Правительства",
                 "content": "Срочный прием документов на повышенную стипендию.",
-                "category": categories["Возможности"],
+                "summary": "Срочный приём документов на повышенную стипендию.",
+                "category": categories["OPPORTUNITY"],
                 "author_id": users["staff"].id,
                 "importance": "critical",
                 "deadline": now + timedelta(days=3),
                 "target_faculty": None,
                 "target_course": None,
                 "target_program": None,
-                "tags": [tags["Стипендии"]],
+                "tags": [tags["SCHOLARSHIP"]],
             },
             {
                 "title": "Хакатон по искусственному интеллекту",
                 "content": "Соревнование по разработке ML-решений.",
-                "category": categories["Возможности"],
+                "summary": "Соревнование по разработке ML-решений.",
+                "category": categories["EVENT"],
                 "author_id": users["staff"].id,
                 "importance": "high",
                 "deadline": now + timedelta(days=10),
                 "target_faculty": None,
                 "target_course": None,
                 "target_program": None,
-                "tags": [tags["ИТ"], tags["Наука"]],
+                "tags": [tags["HACKATHON"], tags["SCIENCE"]],
             },
         ]
 
@@ -190,6 +172,7 @@ async def seed_data():
                 post = Post(
                     title=pdata["title"],
                     content=pdata["content"],
+                    summary=pdata.get("summary"),
                     category_id=pdata["category"].id,
                     author_id=pdata["author_id"],
                     importance=pdata["importance"],

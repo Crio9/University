@@ -38,6 +38,7 @@ class PostRead(BaseModel):
     id: int
     title: str
     content: str
+    summary: str | None = None
     category_id: int
     author_id: int
     importance: Importance
@@ -45,5 +46,7 @@ class PostRead(BaseModel):
     target_faculty: str | None
     target_program: str | None
     target_course: int | None
+    ai_confidence: float | None = None
+    is_saved: bool = False
     created_at: datetime
     tags: list[TagRead] = Field(default_factory=list)

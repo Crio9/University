@@ -12,8 +12,20 @@ from app.models.profile import StudentProfile
 from app.models.student_interest import student_interests
 from app.models.user import User
 from app.schemas.post import PostCreate, PostRead, PostUpdate
+from app.services.saved_posts import (
+    list_saved_posts,
+    saved_post_ids,
+    save_post,
+    unsave_post,
+)
 
 router = APIRouter(prefix="/posts", tags=["posts"])
+
+
+def _with_saved(post: Post, saved_ids: set[int]) -> PostRead:
+    data = PostRead.model_validate(post)
+    data.is_saved = post.id in saved_ids
+    return data
 
 
 @router.get("/feed", response_model=list[PostRead])
@@ -119,7 +131,56 @@ async def get_smart_feed(
         ):
             filtered_posts.append(post)
 
-    return filtered_posts
+    saved_ids = await saved_post_ids(db, current_user.id)
+    return [_with_saved(post, saved_ids) for post in filtered_posts]
+
+
+@router.get("/saved", response_model=list[PostRead])
+async def get_saved_posts(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Publications the current user has saved."""
+    posts = await list_saved_posts(db, current_user.id)
+    return [_with_saved(post, {post.id}) for post in posts]
+
+
+async def _get_post_or_404(db: AsyncSession, post_id: int) -> Post:
+    post = await db.get(Post, post_id)
+    if post is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found",
+        )
+    return post
+
+
+@router.post("/{post_id}/save", response_model=PostRead)
+async def save_publication(
+    post_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Save a publication (idempotent)."""
+    post = await _get_post_or_404(db, post_id)
+    await save_post(db, current_user.id, post_id)
+    await db.commit()
+    await db.refresh(post)
+    return _with_saved(post, {post.id})
+
+
+@router.delete("/{post_id}/save", response_model=PostRead)
+async def unsave_publication(
+    post_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove a publication from the saved list (idempotent)."""
+    post = await _get_post_or_404(db, post_id)
+    await unsave_post(db, current_user.id, post_id)
+    await db.commit()
+    await db.refresh(post)
+    return _with_saved(post, set())
 
 
 @router.get("", response_model=list[PostRead])
@@ -157,7 +218,8 @@ async def create_post(
     await db.commit()
     await db.refresh(post)
 
-    return post
+    saved_ids = await saved_post_ids(db, current_user.id)
+    return _with_saved(post, saved_ids)
 
 
 @router.get("/{post_id}", response_model=PostRead)
@@ -177,7 +239,8 @@ async def get_post(
             detail="Post not found",
         )
 
-    return post
+    saved_ids = await saved_post_ids(db, current_user.id)
+    return _with_saved(post, saved_ids)
 
 
 @router.put("/{post_id}", response_model=PostRead)

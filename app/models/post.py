@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy import (
     Column,
     DateTime,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -30,8 +31,17 @@ class Post(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    # Short AI-generated summary (see classification rules, section 7).
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"), nullable=False)
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    # Provenance of AI-processed content; NULL for manually created posts.
+    raw_content_id: Mapped[int | None] = mapped_column(
+        ForeignKey("raw_contents.id", ondelete="SET NULL"),
+        nullable=True,
+        unique=True,
+    )
+    ai_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
     importance: Mapped[str] = mapped_column(String(20), nullable=False, default="standard")
     deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     target_faculty: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -47,5 +57,6 @@ class Post(Base):
         secondary=post_tags,
         lazy="selectin",
     )
+    raw_content = relationship("RawContent", back_populates="post")
 
 
