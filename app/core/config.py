@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     NVIDIA_API_KEY: str = ""
     NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
-    NVIDIA_MODEL: str = "meta/llama-3.3-70b-instruct"
+    NVIDIA_MODEL: str = "nvidia/nemotron-3.5-lightning-30b-a3b"
     NVIDIA_TIMEOUT_SECONDS: float = Field(default=30, gt=0, le=120)
     NVIDIA_MAX_RETRIES: int = Field(default=2, ge=0, le=3)
     AI_PROCESSING_CONCURRENCY: int = Field(default=3, ge=1, le=10)

@@ -21,11 +21,16 @@ ADMINISTRATIVE — документы, общежитие, оплаты, раб�
 OPPORTUNITY — стажировки, работа, гранты, стипендии, конкурсы, отбор в проекты.
 EVENT — событие, которое можно посетить; NEWS — остальные новости и отчёты.
 Используй только утверждённые категории и теги. Не создавай новые теги.
-importance: LOW для ретроспективных новостей; NORMAL по умолчанию;
+importance: LOW для ретроспективных новостей и отчётов о прошедшем
+(«завершилась», «прошло», «публикуем итоги»), если новых действий не требуется;
+NORMAL по умолчанию;
 HIGH для существенных последствий пропуска; CRITICAL только для исключительных
 срочных изменений с немедленными существенными последствиями.
-deadline — явно указанный конечный срок действия/подачи/регистрации, иначе null.
-Дата самого мероприятия не является deadline. Используй дату публикации из
+deadline — только явно указанный конечный срок для совершения действия:
+подать заявку, зарегистрироваться, оплатить, сдать документы/работу.
+Дата проведения экзамена, занятия или мероприятия НЕ является deadline,
+даже при срочном переносе и importance HIGH/CRITICAL: в таком случае deadline=null.
+Не превращай любую дату в срок. Используй дату публикации из
 контекста для относительных дат и года. Время университета — Europe/Moscow;
 верни ISO 8601 с часовым поясом, для срока без времени — конец указанного дня.
 target_audience содержит ВСЕ явно указанные faculty/program/course/group.
@@ -38,10 +43,18 @@ confidence — диагностическое число [0,1], не вероя�
 {"category":"OPPORTUNITY","tags":["CAREER","INTERNSHIP"],"importance":"NORMAL",
 "deadline":"2026-11-15T23:59:59+03:00","target_audience":{"faculty":["ИОТ"],
 "program":[],"course":[3,4],"group":[]},"summary":"Стажировка VK для ИОТ 3–4 курса. Заявки до 15 ноября.","confidence":0.9}
-Пример: «Экзамен групп ИВТ-31 и ИВТ-32 перенесён с 20 на 19 октября»:
+Пример: «Экзамен групп ИВТ-31 и ИВТ-32 перенесён с 20 на 19 ноября 2026 года»:
 {"category":"ACADEMIC","tags":["EXAM","SCHEDULE"],"importance":"HIGH",
 "deadline":null,"target_audience":{"faculty":[],"program":[],"course":[],
-"group":["ИВТ-31","ИВТ-32"]},"summary":"Экзамен ИВТ-31 и ИВТ-32 перенесён с 20 на 19 октября.","confidence":0.95}
+"group":["ИВТ-31","ИВТ-32"]},"summary":"Экзамен ИВТ-31 и ИВТ-32 перенесён с 20 на 19 ноября.","confidence":0.95}
+Пример: «Лекция для всех студентов пройдёт 10 ноября в 14:00. Вход свободный»:
+{"category":"EVENT","tags":[],"importance":"NORMAL","deadline":null,
+"target_audience":{"faculty":[],"program":[],"course":[],"group":[]},
+"summary":"Открытая лекция для студентов — 10 ноября в 14:00.","confidence":0.9}
+Пример: «Завершилась выставка. Публикуем итоги: лучшие проекты получили дипломы»:
+{"category":"NEWS","tags":[],"importance":"LOW","deadline":null,
+"target_audience":{"faculty":[],"program":[],"course":[],"group":[]},
+"summary":"Подведены итоги выставки, лучшие проекты получили дипломы.","confidence":0.9}
 """
     + "\nКатегории: "
     + ", ".join(sorted(CATEGORY_CODES))
@@ -87,6 +100,9 @@ class NVIDIAAIProvider:
             "temperature": 0.1,
             "max_tokens": 1600,
         }
+        if settings.NVIDIA_MODEL.startswith("nvidia/nemotron-3.5-"):
+            # Keep the output budget for the classification JSON, without reasoning.
+            payload["chat_template_kwargs"] = {"enable_thinking": False}
         if self.client is not None:
             data = await self._request(self.client, payload)
         else:

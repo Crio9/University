@@ -74,8 +74,12 @@ def test_date_only_deadline_ends_at_end_of_university_day():
 
 
 @pytest.mark.asyncio
-async def test_nvidia_request_and_response_contract(monkeypatch):
+@pytest.mark.parametrize(
+    "model", ["nvidia/nemotron-3.5-lightning-30b-a3b", "custom/model"]
+)
+async def test_nvidia_request_and_response_contract(monkeypatch, model):
     monkeypatch.setattr(settings, "NVIDIA_API_KEY", "unit-test-key")
+    monkeypatch.setattr(settings, "NVIDIA_MODEL", model)
 
     def respond(request):
         payload = json.loads(request.content)
@@ -83,6 +87,10 @@ async def test_nvidia_request_and_response_contract(monkeypatch):
         assert request.headers["authorization"] == "Bearer unit-test-key"
         assert payload["model"] == settings.NVIDIA_MODEL
         assert payload["response_format"] == {"type": "json_object"}
+        if model.startswith("nvidia/nemotron-3.5-"):
+            assert payload["chat_template_kwargs"] == {"enable_thinking": False}
+        else:
+            assert "chat_template_kwargs" not in payload
         assert "CAREER" in payload["messages"][0]["content"]
         user = json.loads(payload["messages"][1]["content"])
         assert user["source_context"]["published_at"] == "2026-10-25T10:00:00Z"
