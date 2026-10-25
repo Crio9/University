@@ -14,6 +14,22 @@ permissions:
 jobs:
   pytest:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: uni
+          POSTGRES_PASSWORD: uni
+          POSTGRES_DB: uni_service
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U uni -d uni_service"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -22,6 +38,29 @@ jobs:
           cache: 'pip'
       - name: Install dependencies
         run: pip install -r requirements.txt
+      - name: Verify PostgreSQL migrations and initial data
+        env:
+          DATABASE_URL: postgresql+asyncpg://uni:uni@localhost:5432/uni_service
+          ALEMBIC_DATABASE_URL: postgresql+psycopg2://uni:uni@localhost:5432/uni_service
+          JWT_SECRET: github-ci-only-not-for-production
+          DEBUG: 'false'
+        run: |
+          alembic upgrade head
+          python seed.py
+          python - <<'PY'
+          import asyncio
+          from sqlalchemy import text
+          from app.db.database import engine
+
+          async def verify():
+              async with engine.connect() as conn:
+                  for table in ("raw_contents", "user_saved_posts", "posts"):
+                      count = (await conn.execute(text(f"SELECT count(*) FROM {table}"))).scalar_one()
+                      print(f"{table}: {count} rows")
+              await engine.dispose()
+
+          asyncio.run(verify())
+          PY
       - name: Run full test suite
         env:
           JWT_SECRET: github-ci-only-not-for-production
