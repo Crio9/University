@@ -107,3 +107,45 @@ alembic/
 seed.py
 tests/
 ```
+
+## Telegram: загрузка публичных каналов
+
+Telegram является **источником сырых сообщений**, а не готовых `Post`.
+Поддерживаются только открытые каналы, для которых доступен `https://t.me/s/<username>`.
+Нужны роль `staff`/`admin`, Bearer JWT и применённая миграция `0002`.
+Если Telegram блокирует HTML-просмотр, используйте JSON-импорт.
+
+### Синхронизация одного канала
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/ingest/sync \
+  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
+  -d '{"channel":"dstu_live","limit":20}'
+```
+
+Несколько каналов (до 20 за запрос, до 50 видимых текстовых постов с каждого):
+
+```json
+{"channels": ["dstu_live", "example_channel"], "limit": 20}
+```
+
+### Запасной импорт JSON
+
+`POST /api/v1/ingest/import`, например:
+
+```json
+{"channel":"dstu_live","messages":[{"message_id":42,"text":"Текст объявления","published_at":"2026-10-22T12:00:00Z"}]}
+```
+
+Ответы: `received`, `inserted`, `duplicates`, `channel` и `channels`.
+Хранилище: `raw_contents`, `source_type=telegram`,
+`external_id=<channel>:<message_id>`, `status=pending`.
+Дубликаты не изменяются благодаря уникальному индексу PostgreSQL.
+AI-классификация не вызывается при загрузке Telegram: она отдельный этап.
+
+Страница `t.me/s` показывает только ограниченное число последних сообщений;
+загрузка полной истории и сообщений из приватных каналов не поддерживается.
+`beautifulsoup4` и `httpx` используются для HTML-парсера.
+`pytest tests/test_telegram_source.py tests/test_telegram_api.py` проверяет
+парсинг, ошибки, права доступа, импорт и идемпотентность без сетевых запросов.
+
