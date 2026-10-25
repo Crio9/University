@@ -8,26 +8,35 @@ are de-duplicated on ``(source_type, external_id)``.
 from __future__ import annotations
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.raw_content import RawContent, RawContentStatus
 from app.schemas.raw_content import RawContentCreate
 
 
-async def ingest_raw_content(
-    db: AsyncSession, data: RawContentCreate
-) -> RawContent:
+async def ingest_raw_content(db: AsyncSession, data: RawContentCreate) -> RawContent:
     """Create (or return the existing) raw content row for the given item."""
-    if data.external_id:
-        result = await db.execute(
-            select(RawContent).where(
-                RawContent.source_type == data.source_type,
-                RawContent.external_id == data.external_id,
+    if data.external_id is not None:
+        dialect = db.get_bind().dialect.name
+        insert = pg_insert if dialect == "postgresql" else sqlite_insert
+        await db.execute(
+            insert(RawContent)
+            .values(
+                **data.model_dump(),
+                status=RawContentStatus.PENDING.value,
             )
+            .on_conflict_do_nothing(index_elements=["source_type", "external_id"])
         )
-        existing = result.scalar_one_or_none()
-        if existing is not None:
-            return existing
+        return (
+            await db.scalars(
+                select(RawContent).where(
+                    RawContent.source_type == data.source_type,
+                    RawContent.external_id == data.external_id,
+                )
+            )
+        ).one()
 
     raw = RawContent(
         source_type=data.source_type,

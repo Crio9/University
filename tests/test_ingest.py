@@ -13,6 +13,8 @@ from app.models.raw_content import RawContent, RawContentStatus
 from app.models.user import User
 from app.services import classification
 from app.services.dictionaries import sync_reference_data
+from app.services.processing import get_processing_session_factory
+from app.models.profile import StudentProfile
 
 
 @pytest.fixture
@@ -38,6 +40,15 @@ async def env():
         )
         session.add_all([staff, student])
         await session.flush()
+        session.add(
+            StudentProfile(
+                user_id=student.id,
+                faculty="ФИСТ",
+                course=2,
+                study_program="ПМИ",
+                study_group="ФИСТ-21",
+            )
+        )
         await sync_reference_data(session)
         await session.commit()
         staff_id, student_id = staff.id, student.id
@@ -47,10 +58,13 @@ async def env():
             yield session
 
     fastapi_app.dependency_overrides[get_db] = override_get_db
+    fastapi_app.dependency_overrides[get_processing_session_factory] = lambda: Session
     transport = ASGITransport(app=fastapi_app)
 
     staff_headers = {"Authorization": f"Bearer {create_access_token(str(staff_id))}"}
-    student_headers = {"Authorization": f"Bearer {create_access_token(str(student_id))}"}
+    student_headers = {
+        "Authorization": f"Bearer {create_access_token(str(student_id))}"
+    }
 
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield {
@@ -88,8 +102,12 @@ async def test_manual_ingestion_is_idempotent(env):
         "external_id": "post-42",
         "raw_text": "Один и тот же пост",
     }
-    first = await env["client"].post("/api/v1/ingest/raw", headers=env["staff"], json=payload)
-    second = await env["client"].post("/api/v1/ingest/raw", headers=env["staff"], json=payload)
+    first = await env["client"].post(
+        "/api/v1/ingest/raw", headers=env["staff"], json=payload
+    )
+    second = await env["client"].post(
+        "/api/v1/ingest/raw", headers=env["staff"], json=payload
+    )
     assert first.status_code == 201
     assert first.json()["id"] == second.json()["id"]
 
@@ -185,12 +203,18 @@ async def test_pipeline_creates_post_on_valid_classification(env, monkeypatch):
         "tags": ["CAREER", "INTERNSHIP"],
         "importance": "NORMAL",
         "deadline": "2026-11-15T23:59:59",
-        "target_faculty": ["ФИСТ"],
-        "target_course": [2],
+        "target_audience": {
+            "faculty": ["ФИСТ"],
+            "program": [],
+            "course": [2],
+            "group": [],
+        },
         "summary": "Стажировка для студентов ФИСТ.",
         "confidence": 0.92,
     }
-    monkeypatch.setattr(classification, "get_classifier", lambda: _FakeClassifier(payload))
+    monkeypatch.setattr(
+        classification, "get_classifier", lambda: _FakeClassifier(payload)
+    )
 
     response = await env["client"].post(
         "/api/v1/ingest/raw",
@@ -218,34 +242,57 @@ async def test_pipeline_creates_post_on_valid_classification(env, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_pipeline_marks_needs_review_on_ambiguous_audience(env, monkeypatch):
+async def test_pipeline_preserves_multiple_courses(env, monkeypatch):
     payload = {
         "category": "OPPORTUNITY",
         "tags": ["CAREER"],
-        "target_course": [3, 4],
+        "importance": "NORMAL",
+        "summary": "Для 3–4 курса",
+        "target_audience": {
+            "faculty": [],
+            "program": [],
+            "course": [3, 4],
+            "group": [],
+        },
         "confidence": 0.8,
     }
-    monkeypatch.setattr(classification, "get_classifier", lambda: _FakeClassifier(payload))
+    monkeypatch.setattr(
+        classification, "get_classifier", lambda: _FakeClassifier(payload)
+    )
 
     response = await env["client"].post(
         "/api/v1/ingest/raw",
         headers=env["staff"],
-        json={"source_type": "manual", "raw_text": "Для 3-4 курса", "external_id": "amb-1"},
+        json={
+            "source_type": "manual",
+            "raw_text": "Для 3-4 курса",
+            "external_id": "amb-1",
+        },
     )
-    assert response.json()["status"] == "needs_review"
-    assert "ambiguous audience" in response.json()["processing_error"]
+    assert response.json()["status"] == "processed"
 
     async with env["Session"]() as session:
         result = await session.execute(
             select(Post).where(Post.raw_content_id == response.json()["id"])
         )
-        assert result.scalar_one_or_none() is None
+        post = result.scalar_one()
+        assert post.target_audience["course"] == [3, 4]
+        assert post.target_course is None
 
 
 @pytest.mark.asyncio
 async def test_pipeline_marks_needs_review_on_unresolved_values(env, monkeypatch):
-    payload = {"category": "КВАНТОВАЯ ФИЗИКА", "tags": ["CAREER"], "confidence": 0.5}
-    monkeypatch.setattr(classification, "get_classifier", lambda: _FakeClassifier(payload))
+    payload = {
+        "category": "NEWS",
+        "tags": ["КВАНТОВАЯ ФИЗИКА"],
+        "importance": "NORMAL",
+        "summary": "Проверка",
+        "target_audience": {"faculty": [], "program": [], "course": [], "group": []},
+        "confidence": 0.5,
+    }
+    monkeypatch.setattr(
+        classification, "get_classifier", lambda: _FakeClassifier(payload)
+    )
 
     response = await env["client"].post(
         "/api/v1/ingest/raw",
@@ -266,7 +313,11 @@ async def test_pipeline_marks_failed_on_invalid_payload(env, monkeypatch):
     response = await env["client"].post(
         "/api/v1/ingest/raw",
         headers=env["staff"],
-        json={"source_type": "manual", "raw_text": "Без категории", "external_id": "bad-2"},
+        json={
+            "source_type": "manual",
+            "raw_text": "Без категории",
+            "external_id": "bad-2",
+        },
     )
     assert response.json()["status"] == "failed"
     assert response.json()["processing_error"]

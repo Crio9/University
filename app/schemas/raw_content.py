@@ -26,6 +26,7 @@ class RawContentRead(BaseModel):
     ingest_metadata: dict | None = None
     status: str
     processing_error: str | None = None
+    ai_result: dict | None = None
     processed_at: datetime | None = None
     created_at: datetime
     updated_at: datetime

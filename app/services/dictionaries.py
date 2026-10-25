@@ -12,11 +12,14 @@ intact.
 
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dictionaries import CANONICAL_CATEGORIES, CANONICAL_TAGS, DictionaryEntry
 from app.models.dictionaries import Category, Tag
+from app.models.post import Post, post_tags
+from app.models.student_interest import student_interests
+from app.services.normalization import canonical_code
 
 
 async def _sync_entry(
@@ -24,19 +27,58 @@ async def _sync_entry(
     model: type[Category] | type[Tag],
     entry: DictionaryEntry,
 ) -> None:
-    # 1) Preferred match: the canonical machine code.
-    result = await db.execute(select(model).where(model.code == entry.code))
-    row = result.scalar_one_or_none()
-
-    # 2) Fallback: an existing row with the same display name (legacy data).
-    if row is None:
-        result = await db.execute(select(model).where(model.name == entry.name))
-        row = result.scalar_one_or_none()
+    rows = list(await db.scalars(select(model).order_by(model.id)))
+    candidates = [
+        row
+        for row in rows
+        if row.code == entry.code
+        or (
+            row.code is None
+            and (row.name == entry.name or canonical_code(row.name) == entry.code)
+        )
+    ]
+    row = next((row for row in candidates if row.code == entry.code), None)
+    if row is None and candidates:
+        row = candidates[0]
 
     if row is None:
         db.add(model(name=entry.name, code=entry.code))
         await db.flush()
         return
+
+    # Reconcile aliases without losing existing interests or post-tag links.
+    for duplicate in candidates:
+        if duplicate.id == row.id:
+            continue
+        if model is Category:
+            await db.execute(
+                update(Post)
+                .where(Post.category_id == duplicate.id)
+                .values(category_id=row.id)
+            )
+        else:
+            for table, owner in (
+                (post_tags, "post_id"),
+                (student_interests, "student_id"),
+            ):
+                owners = list(
+                    await db.scalars(
+                        select(table.c[owner]).where(table.c.tag_id == duplicate.id)
+                    )
+                )
+                existing = set(
+                    await db.scalars(
+                        select(table.c[owner]).where(table.c.tag_id == row.id)
+                    )
+                )
+                for owner_id in owners:
+                    if owner_id not in existing:
+                        await db.execute(
+                            table.insert().values({owner: owner_id, "tag_id": row.id})
+                        )
+                await db.execute(delete(table).where(table.c.tag_id == duplicate.id))
+        await db.delete(duplicate)
+        await db.flush()
 
     changed = False
     if row.code != entry.code:

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from sqlalchemy import or_, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dictionaries import ALIASES, CATEGORY_CODES, TAG_CODES, normalise_key
@@ -72,9 +72,7 @@ async def normalize_category(
     return None
 
 
-async def normalize_tag(
-    value: str, *, db: AsyncSession | None = None
-) -> str | None:
+async def normalize_tag(value: str, *, db: AsyncSession | None = None) -> str | None:
     """Return a canonical tag code or ``None`` if it cannot be resolved."""
     code = canonical_code(value)
     if code in TAG_CODES:
@@ -92,15 +90,10 @@ async def _match_existing(
     stripped = value.strip()
     if not stripped:
         return None
-    result = await db.execute(
-        select(model).where(
-            or_(
-                model.name == stripped,
-                model.name.ilike(stripped),
-            )
-        )
+    result = await db.scalars(select(model))
+    return next(
+        (row for row in result if row.name.casefold() == stripped.casefold()), None
     )
-    return result.scalars().first()
 
 
 async def normalize_tags(

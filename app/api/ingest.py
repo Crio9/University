@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,10 +9,34 @@ from app.models.user import User
 from app.schemas.raw_content import RawContentCreate, RawContentRead
 from app.services.classification import process_raw_content
 from app.services.ingestion import ingest_raw_content
+from app.services import classification
+from app.services.processing import get_processing_session_factory, process_raw_ids
 
 router = APIRouter(prefix="/ingest", tags=["ingest"])
 
 require_staff = require_roles("staff", "admin")
+
+
+@router.post("/process-pending")
+async def process_pending(
+    background_tasks: BackgroundTasks,
+    limit: int = Query(default=20, ge=1, le=100),
+    current_user: User = Depends(require_staff),
+    db: AsyncSession = Depends(get_db),
+    session_factory=Depends(get_processing_session_factory),
+):
+    if classification.get_classifier() is None:
+        raise HTTPException(status_code=503, detail="NVIDIA_API_KEY is not configured")
+    ids = list(
+        await db.scalars(
+            select(RawContent.id)
+            .where(RawContent.status == "pending")
+            .order_by(RawContent.id)
+            .limit(limit)
+        )
+    )
+    background_tasks.add_task(process_raw_ids, ids, session_factory)
+    return {"queued": len(ids)}
 
 
 @router.post("/raw", response_model=RawContentRead, status_code=201)
@@ -23,6 +47,8 @@ async def create_raw_content(
 ):
     """Manual ingestion entry point (fallback / testing). Idempotent per source."""
     raw = await ingest_raw_content(db, data)
+    # Keep the source durable even if the provider request is interrupted.
+    await db.commit()
     await process_raw_content(db, raw)
     await db.commit()
     await db.refresh(raw)

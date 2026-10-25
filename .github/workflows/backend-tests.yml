@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - feature/telegram-ingestion-develop
+      - codex/llm-ingestion-integration
+      - develop
   pull_request:
     branches:
       - develop
@@ -65,4 +67,5 @@ jobs:
         env:
           JWT_SECRET: github-ci-only-not-for-production
           DEBUG: 'false'
+          TEST_DATABASE_URL: postgresql+asyncpg://uni:uni@localhost:5432/uni_service
         run: python -m pytest -q

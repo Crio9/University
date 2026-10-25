@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import case, select
+from sqlalchemy import and_, case, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_db
@@ -12,6 +12,7 @@ from app.models.profile import StudentProfile
 from app.models.student_interest import student_interests
 from app.models.user import User
 from app.schemas.post import PostCreate, PostRead, PostUpdate
+from app.services.audience import matches_audience, synchronize_targeting
 from app.services.saved_posts import (
     list_saved_posts,
     saved_post_ids,
@@ -50,27 +51,29 @@ async def get_smart_feed(
     now = datetime.now(timezone.utc)
     deadline_limit = now + timedelta(days=7)
 
-    query = select(Post).where(
-        (Post.target_faculty.is_(None))
-        | (Post.target_faculty == profile.faculty),
-        (Post.target_course.is_(None))
-        | (Post.target_course == profile.course),
+    legacy_targeting = and_(
+        (Post.target_faculty.is_(None)) | (Post.target_faculty == profile.faculty),
+        (Post.target_course.is_(None)) | (Post.target_course == profile.course),
         (Post.target_program.is_(None))
         | (Post.target_program == profile.study_program),
-    ).order_by(
-        case(
-            (
-                (Post.deadline >= now)
-                & (Post.deadline <= deadline_limit),
-                0,
+    )
+    query = (
+        select(Post)
+        .where(or_(Post.target_audience.is_not(None), legacy_targeting))
+        .order_by(
+            case(
+                (
+                    (Post.deadline >= now) & (Post.deadline <= deadline_limit),
+                    0,
+                ),
+                else_=1,
             ),
-            else_=1,
-        ),
-        case(
-            (Post.importance == "critical", 0),
-            else_=1,
-        ),
-        Post.created_at.desc(),
+            case(
+                (Post.importance == "critical", 0),
+                else_=1,
+            ),
+            Post.created_at.desc(),
+        )
     )
 
     result = await db.execute(query)
@@ -96,16 +99,18 @@ async def get_smart_feed(
         post_tag_result = await db.execute(post_tag_query)
         matching_post_ids = set(post_tag_result.scalars().all())
 
-    category_query = select(Category.id, Category.name)
+    category_query = select(Category.id, Category.name, Category.code)
     category_result = await db.execute(category_query)
     category_names = {
-        category_id: name.lower()
-        for category_id, name in category_result.all()
+        category_id: (code or name).lower()
+        for category_id, name, code in category_result.all()
     }
 
     filtered_posts = []
 
     for post in posts:
+        if not matches_audience(post.target_audience, profile):
+            continue
         category_name = category_names.get(post.category_id, "")
         is_important = post.importance == "critical"
 
@@ -116,10 +121,7 @@ async def get_smart_feed(
             or "админ" in category_name
         )
 
-        is_opportunity = (
-            "opportunit" in category_name
-            or "возможност" in category_name
-        )
+        is_opportunity = "opportunit" in category_name or "возможност" in category_name
 
         has_matching_interest = post.id in matching_post_ids
 
@@ -188,9 +190,7 @@ async def list_posts(
     current_user: User = Depends(require_roles("staff", "admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(Post).order_by(Post.created_at.desc())
-    )
+    result = await db.execute(select(Post).order_by(Post.created_at.desc()))
     return result.scalars().all()
 
 
@@ -204,7 +204,7 @@ async def create_post(
     current_user: User = Depends(require_roles("staff", "admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    data = post_data.model_dump()
+    data = synchronize_targeting(post_data.model_dump())
     tag_ids = data.pop("tag_ids", [])
     post = Post(
         **data,
@@ -228,9 +228,7 @@ async def get_post(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(Post).where(Post.id == post_id)
-    )
+    result = await db.execute(select(Post).where(Post.id == post_id))
     post = result.scalar_one_or_none()
 
     if post is None:
@@ -250,9 +248,7 @@ async def update_post(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(Post).where(Post.id == post_id)
-    )
+    result = await db.execute(select(Post).where(Post.id == post_id))
     post = result.scalar_one_or_none()
 
     if post is None:
@@ -267,7 +263,9 @@ async def update_post(
             detail="You cannot edit this post",
         )
 
-    updates = post_data.model_dump(exclude_unset=True)
+    updates = synchronize_targeting(
+        post_data.model_dump(exclude_unset=True), current=post
+    )
     tag_ids = updates.pop("tag_ids", None)
     for field, value in updates.items():
         setattr(post, field, value)
@@ -288,9 +286,7 @@ async def delete_post(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(Post).where(Post.id == post_id)
-    )
+    result = await db.execute(select(Post).where(Post.id == post_id))
     post = result.scalar_one_or_none()
 
     if post is None:
