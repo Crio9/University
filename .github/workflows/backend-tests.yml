@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/telegram-ingestion-develop
+      - feature/nvidia-ai-classifier
       - codex/llm-ingestion-integration
       - develop
   pull_request:
