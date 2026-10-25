@@ -12,21 +12,42 @@ Backend MyUni — персональная точка взаимодействи
 - JWT (python-jose), bcrypt
 - pytest + pytest-asyncio, SQLite (aiosqlite) для тестов
 
-## Быстрый старт
+## Быстрый старт (Linux, Python 3.12)
+
+Код требует работающий PostgreSQL. Настройки подключения задаются в `.env`
+по образцу `.env.example`. Не коммитьте реальный `.env` или пароли.
 
 ```bash
-docker compose up -d          # PostgreSQL (если есть Docker)
-python -m venv .venv
-.venv\Scripts\activate        # Windows
-pip install -r requirements.txt
-copy .env.example .env
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+cp .env.example .env
+```
 
+Если PostgreSQL уже установлен, для значений из `.env.example`
+создайте **отдельную локальную БД** `uni_service` и роль `uni`
+(пример в `psql` из-под администратора PostgreSQL):
+
+```sql
+CREATE ROLE uni LOGIN PASSWORD 'uni';
+CREATE DATABASE uni_service OWNER uni;
+```
+
+Не выполняйте `CREATE ROLE`/`CREATE DATABASE` повторно, если эти объекты
+уже есть. Для существующего пользователя/БД укажите правильные значения
+`DATABASE_URL` и `ALEMBIC_DATABASE_URL` в `.env`.
+
+```bash
 alembic upgrade head
 python seed.py
+python -m pytest -q
 uvicorn app.main:app --reload
 ```
 
 Swagger: http://127.0.0.1:8000/docs
+
+CI в `.github/workflows/backend-tests.yml` проверяет миграции и seed на
+PostgreSQL 16, а API и Telegram-парсер — автоматическими тестами.
 
 ## Основные эндпоинты
 
