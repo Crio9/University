@@ -206,13 +206,23 @@ async def create_post(
 ):
     data = synchronize_targeting(post_data.model_dump())
     tag_ids = data.pop("tag_ids", [])
+    if await db.get(Category, data["category_id"]) is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown category"
+        )
     post = Post(
         **data,
         author_id=current_user.id,
     )
     if tag_ids:
         tag_result = await db.execute(select(Tag).where(Tag.id.in_(tag_ids)))
-        post.tags = list(tag_result.scalars().all())
+        tags = list(tag_result.scalars().all())
+        if len(tags) != len(set(tag_ids)):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unknown tag in tag_ids",
+            )
+        post.tags = tags
 
     db.add(post)
     await db.commit()
@@ -267,12 +277,24 @@ async def update_post(
         post_data.model_dump(exclude_unset=True), current=post
     )
     tag_ids = updates.pop("tag_ids", None)
+    if updates.get("category_id") is not None and await db.get(
+        Category, updates["category_id"]
+    ) is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown category"
+        )
     for field, value in updates.items():
         setattr(post, field, value)
 
     if tag_ids is not None:
         tag_result = await db.execute(select(Tag).where(Tag.id.in_(tag_ids)))
-        post.tags = list(tag_result.scalars().all())
+        tags = list(tag_result.scalars().all())
+        if len(tags) != len(set(tag_ids)):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unknown tag in tag_ids",
+            )
+        post.tags = tags
 
     await db.commit()
     await db.refresh(post)

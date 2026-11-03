@@ -1,53 +1,95 @@
-"""Canonical audience values come from the existing university profiles."""
+"""Canonical audience values come from the canonical university structure.
+
+Legacy profile text is still accepted for profiles that were not linked to a
+``StudyGroup`` during the Sprint 3 migration, so Sprint 2 targeting keeps
+working. For linked profiles the group's canonical chain is the only source of
+truth (FR-1.6).
+"""
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.profile import StudentProfile
+from app.models.university import Faculty, StudyGroup, StudyProgram
 from app.schemas.ai_classification import TargetAudience
+from app.services.university import (
+    audience_key,
+    context_from_group,
+    load_canonical_names,
+)
 
 
-def audience_key(value: str) -> str:
-    return " ".join(value.strip().casefold().replace("ё", "е").split())
+async def normalize_audience(
+    db: AsyncSession, audience: TargetAudience | dict
+):
+    """Resolve AI-provided audience values to canonical display names.
 
+    Values are matched against canonical names and declared aliases. Unresolved
+    values are reported to the caller (leading to ``needs_review``), never
+    silently dropped (B-08 / FR-2.8).
+    """
+    if isinstance(audience, TargetAudience):
+        data = audience.model_dump()
+    else:
+        data = {
+            "faculty": [],
+            "program": [],
+            "course": [],
+            "group": [],
+            **audience,
+        }
 
-async def normalize_audience(db: AsyncSession, audience: TargetAudience):
-    data = audience.model_dump()
+    canonical = await load_canonical_names(db)
     unresolved = []
-    for field, column in (
-        ("faculty", StudentProfile.faculty),
-        ("program", StudentProfile.study_program),
-        ("group", StudentProfile.study_group),
-    ):
-        if not data[field]:
+    for field in ("faculty", "program", "group"):
+        requested = data[field]
+        if not requested:
             continue
-        rows = await db.scalars(
-            select(column).where(column.is_not(None)).distinct().order_by(column)
-        )
-        references = {}
-        for value in rows:
-            if value.strip():
-                references.setdefault(audience_key(value), value.strip())
-        canonical = []
-        for value in data[field]:
-            match = references.get(audience_key(value))
-            if match is None:
+        candidates = getattr(canonical, {"faculty": "faculties", "program": "programs", "group": "groups"}[field])
+        resolved = []
+        for value in requested:
+            key = audience_key(value)
+            matches = [
+                name
+                for name, aliases in candidates.items()
+                if key in {audience_key(alias) for alias in aliases}
+            ]
+            if len(matches) != 1:
                 unresolved.append(f"{field}={value}")
-            elif match not in canonical:
-                canonical.append(match)
-        data[field] = canonical
+                continue
+            display = candidates[matches[0]][0]
+            if display not in resolved:
+                resolved.append(display)
+        data[field] = resolved
     return TargetAudience.model_validate(data), unresolved
 
 
 def matches_audience(audience: dict | None, profile: StudentProfile) -> bool:
     if audience is None:
         return True
-    for field, value in (
-        ("faculty", profile.faculty),
-        ("program", profile.study_program),
-        ("course", profile.course),
-        ("group", profile.study_group),
-    ):
+
+    # A linked group defines the whole context (FR-1.6); legacy text is the
+    # fallback for profiles that were left unlinked by the migration.
+    if profile.study_group_id is not None:
+        group = profile.study_group
+        if group is None:
+            return False
+        derived = context_from_group(group)
+        faculty = derived["faculty"]
+        program = derived["study_program"]
+        group_name = derived["study_group"]
+    else:
+        faculty = profile.faculty
+        program = profile.study_program
+        group_name = profile.study_group
+
+    values = {
+        "faculty": faculty,
+        "program": program,
+        "course": profile.course,
+        "group": group_name,
+    }
+    for field, value in values.items():
         allowed = audience.get(field, [])
         if not allowed:
             continue

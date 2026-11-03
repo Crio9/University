@@ -1,9 +1,11 @@
 from fastapi import HTTPException, status
 from sqlalchemy import delete, select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.profile import StaffProfile, StudentProfile, TeacherProfile
 from app.models.student_interest import student_interests
+from app.models.university import Faculty, StudyGroup, StudyProgram
 from app.models.user import User
 from app.schemas.profile import (
     StaffProfileUpdate,
@@ -79,11 +81,38 @@ async def update_student_profile(
         profile = StudentProfile(user_id=current_user.id)
         db.add(profile)
 
-    profile.university = data.university
-    profile.faculty = data.faculty
-    profile.course = data.course
-    profile.study_group = data.study_group
-    profile.study_program = data.study_program
+    if data.study_group_id is not None:
+        group = await db.scalar(
+            select(StudyGroup)
+            .where(StudyGroup.id == data.study_group_id)
+            .options(
+                selectinload(StudyGroup.program)
+                .selectinload(StudyProgram.faculty)
+                .selectinload(Faculty.university)
+            )
+        )
+        if group is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unknown study group",
+            )
+        profile.study_group_id = group.id
+        program = group.program
+        profile.university = program.faculty.university.name
+        profile.faculty = program.faculty.name
+        profile.study_program = program.name
+        profile.study_group = group.name
+    elif any(value.strip() for value in (data.university, data.faculty, data.study_group, data.study_program)):
+        # Kept for Sprint 2 clients that send text only; the canonical group
+        # is not known yet, so the migration rule (FR-1.7) is not violated by
+        # the row itself until a group is selected.
+        profile.university = data.university
+        profile.faculty = data.faculty
+        profile.study_group = data.study_group
+        profile.study_program = data.study_program
+
+    if data.course is not None:
+        profile.course = data.course
 
     await db.execute(
         delete(student_interests).where(student_interests.c.student_id == current_user.id)
@@ -98,7 +127,7 @@ async def update_student_profile(
             )
 
     await db.commit()
-    await db.refresh(profile)
+    await db.refresh(profile, attribute_names=["study_group"])
 
     return {
         "message": "Student profile updated",
@@ -108,6 +137,7 @@ async def update_student_profile(
             "course": profile.course,
             "study_group": profile.study_group,
             "study_program": profile.study_program,
+            "study_group_id": profile.study_group_id,
             "interest_ids": data.interest_ids,
         },
     }

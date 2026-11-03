@@ -5,6 +5,7 @@ from app.models.profile import StaffProfile, StudentProfile, TeacherProfile
 from app.models.raw_content import RawContent, RawContentStatus
 from app.models.saved_post import UserSavedPost
 from app.models.student_interest import student_interests
+from app.models.university import Faculty, StudyGroup, StudyProgram, University
 from app.models.user import User
 
 __all__ = [
@@ -14,6 +15,10 @@ __all__ = [
     "TeacherProfile",
     "StaffProfile",
     "student_interests",
+    "University",
+    "Faculty",
+    "StudyProgram",
+    "StudyGroup",
     "Category",
     "Tag",
     "Post",

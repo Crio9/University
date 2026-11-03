@@ -204,7 +204,7 @@ async def test_pipeline_creates_post_on_valid_classification(env, monkeypatch):
         "importance": "NORMAL",
         "deadline": "2026-11-15T23:59:59",
         "target_audience": {
-            "faculty": ["ФИСТ"],
+            "faculty": ["ФИТ"],
             "program": [],
             "course": [2],
             "group": [],
@@ -236,7 +236,7 @@ async def test_pipeline_creates_post_on_valid_classification(env, monkeypatch):
         assert post.summary == "Стажировка для студентов ФИСТ."
         assert abs(post.ai_confidence - 0.92) < 1e-9
         assert post.importance == "standard"
-        assert post.target_faculty == "ФИСТ"
+        assert post.target_faculty == "ФИТ"
         assert post.target_course == 2
         assert {tag.code for tag in post.tags} == {"CAREER", "INTERNSHIP"}
 

@@ -22,6 +22,13 @@ async def test_profiles_flow():
             await conn.run_sync(Base.metadata.create_all)
 
         async with Session() as session:
+            from app.models.university import (
+                Faculty,
+                StudyGroup,
+                StudyProgram,
+                University,
+            )
+
             student = User(
                 email="student@uni.test",
                 password_hash=hash_password("pass123"),
@@ -29,8 +36,13 @@ async def test_profiles_flow():
                 role="student",
             )
             tag = Tag(name="ИТ")
-            session.add_all([student, tag])
+            university = University(code="DSTU", name="ДГТУ")
+            faculty = Faculty(university=university, code="FIST", name="ФИТ")
+            program = StudyProgram(faculty=faculty, code="PMI", name="ПМИ")
+            group = StudyGroup(program=program, code="IVT-21", name="ИВТ-21")
+            session.add_all([student, tag, university, faculty, program, group])
             await session.flush()
+            group_id = group.id
             session.add(StudentProfile(user_id=student.id))
             await session.commit()
             student_id = student.id
@@ -55,22 +67,34 @@ async def test_profiles_flow():
                 "/api/v1/profile/student",
                 headers=headers,
                 json={
-                    "university": "Университет",
-                    "faculty": "ФИСТ",
+                    "study_group_id": group_id,
                     "course": 2,
-                    "study_group": "ИТ-201",
-                    "study_program": "ПМИ",
                     "interest_ids": [tag_id],
                 },
             )
             assert update_resp.status_code == 200
-            assert update_resp.json()["profile"]["faculty"] == "ФИСТ"
+            assert update_resp.json()["profile"]["faculty"] == "ФИТ"
+            assert update_resp.json()["profile"]["study_group_id"] == group_id
             assert update_resp.json()["profile"]["interest_ids"] == [tag_id]
 
             me_after = await client.get("/api/v1/profile/me", headers=headers)
             assert me_after.status_code == 200
             assert me_after.json()["profile"]["course"] == 2
             assert me_after.json()["profile"]["interest_ids"] == [tag_id]
+
+            unknown_group = await client.put(
+                "/api/v1/profile/student",
+                headers=headers,
+                json={"study_group_id": 999999},
+            )
+            assert unknown_group.status_code == 400
+
+            text_without_group = await client.put(
+                "/api/v1/profile/student",
+                headers=headers,
+                json={"faculty": "ФИТ"},
+            )
+            assert text_without_group.status_code == 422
     finally:
         fastapi_app.dependency_overrides.clear()
         await engine.dispose()

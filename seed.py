@@ -11,12 +11,15 @@ from app.models.profile import StaffProfile, StudentProfile, TeacherProfile
 from app.models.student_interest import student_interests
 from app.models.user import User
 from app.services.dictionaries import sync_reference_data
+from app.services.university import sync_university_structure
 
 
 async def seed_data():
     async with AsyncSessionLocal() as db:
         # Reconcile the canonical vocabulary (idempotent; reuses legacy rows).
         await sync_reference_data(db)
+        # Canonical university structure (managed seed/import, FR-1.10).
+        await sync_university_structure(db)
         await db.flush()
 
         cats_res = await db.execute(select(Category))

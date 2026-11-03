@@ -97,7 +97,7 @@ async def test_retries_preserve_one_post_and_all_metadata(env, monkeypatch):
         assert post.ai_confidence == payload["confidence"]
         assert post.raw_content_id == raw_id
         assert post.target_audience == {
-            "faculty": ["ФИСТ"],
+            "faculty": ["ФИТ"],
             "program": ["ПМИ"],
             "course": [2, 3],
             "group": ["ФИСТ-21"],

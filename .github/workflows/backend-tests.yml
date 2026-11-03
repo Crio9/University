@@ -7,9 +7,11 @@ on:
       - feature/nvidia-ai-classifier
       - codex/llm-ingestion-integration
       - develop
+      - sprint3
   pull_request:
     branches:
       - develop
+      - sprint3
 
 permissions:
   contents: read
