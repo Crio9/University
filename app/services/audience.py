@@ -25,9 +25,18 @@ async def normalize_audience(db: AsyncSession, audience: TargetAudience):
             select(column).where(column.is_not(None)).distinct().order_by(column)
         )
         references = {}
-        for value in rows:
-            if value.strip():
-                references.setdefault(audience_key(value), value.strip())
+
+        values = sorted(
+            {value.strip() for value in rows if value.strip()},
+            key=lambda value: (
+                value != value.upper(),
+                value.casefold(),
+                value,
+            ),
+        )
+
+        for value in values:
+            references.setdefault(audience_key(value), value)
         canonical = []
         for value in data[field]:
             match = references.get(audience_key(value))

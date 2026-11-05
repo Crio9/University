@@ -231,3 +231,4 @@ PostgreSQL-тесты создают и удаляют собственные в
 конкурентные повторы. NVIDIA в автоматических тестах заменяется MockAIProvider
 или HTTP MockTransport; реальные сетевые запросы к модели не выполняются.
 
+Docker Compose instructions: [Backend Defense](docs/docker-backend-defense.md).

@@ -6,6 +6,7 @@ from app.models.raw_content import RawContent, RawContentStatus
 from app.models.saved_post import UserSavedPost
 from app.models.student_interest import student_interests
 from app.models.user import User
+from app.models.schedule import ScheduleEntry, staff_schedule_groups
 
 __all__ = [
     "Base",
@@ -21,4 +22,6 @@ __all__ = [
     "RawContent",
     "RawContentStatus",
     "UserSavedPost",
+    "ScheduleEntry",
+    "staff_schedule_groups",
 ]

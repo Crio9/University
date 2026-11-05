@@ -20,7 +20,7 @@ require_staff = require_roles("staff", "admin")
 @router.post("/process-pending")
 async def process_pending(
     background_tasks: BackgroundTasks,
-    limit: int = Query(default=20, ge=1, le=100),
+    limit: int = Query(default=20, ge=1, le=1000),
     current_user: User = Depends(require_staff),
     db: AsyncSession = Depends(get_db),
     session_factory=Depends(get_processing_session_factory),

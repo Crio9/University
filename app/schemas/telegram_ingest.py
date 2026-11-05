@@ -1,15 +1,15 @@
-"""Input and output contracts for Telegram sync and JSON fallback."""
+"""Telegram ingestion request/response contracts, including bulk import."""
 from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.services.telegram_source import clean_channel
+from app.services.telegram_source import clean_channel, MAX_SYNC_LIMIT
 
 
 class TelegramSyncRequest(BaseModel):
     channel: str | None = None
     channels: list[str] | None = Field(default=None, min_length=1, max_length=20)
-    limit: int = Field(default=20, ge=1, le=50)
+    limit: int = Field(default=20, ge=1, le=MAX_SYNC_LIMIT)
 
     @field_validator("channel")
     @classmethod
@@ -40,7 +40,7 @@ class TelegramImportItem(BaseModel):
 
 class TelegramImportRequest(BaseModel):
     channel: str
-    messages: list[TelegramImportItem] = Field(min_length=1, max_length=100)
+    messages: list[TelegramImportItem] = Field(min_length=1, max_length=1000)
 
     @field_validator("channel")
     @classmethod
