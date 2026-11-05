@@ -1,7 +1,6 @@
-"""Schedule application logic. Current develop uses legacy profile group text.
+"""Schedule service using StudyGroup.id for identity and staff permissions.
 
-This module deliberately does not import app.models.university, which is owned
-by the other feature branch and will be merged by the tech lead.
+Until Commit 3, group_key and text snapshots remain for old DB compatibility.
 """
 from __future__ import annotations
 
@@ -18,12 +17,13 @@ from app.models.profile import StudentProfile
 from app.models.schedule import ScheduleEntry, staff_schedule_groups
 from app.models.user import User
 from app.schemas.schedule import GroupSelector, ScheduleCreate, ScheduleUpdate
+from app.services.university import context_from_group, load_group
 
 LOCAL_TZ = ZoneInfo("Europe/Moscow")  # agreed MVP timezone; revisit for multiple universities
 
 
 def group_key(group: GroupSelector | StudentProfile) -> str:
-    """Disambiguate repeated group names across institutions/programs."""
+    """Legacy stable key used only for existing NOT NULL columns/backfill."""
     items = [getattr(group, key, None) for key in (
         "university", "faculty", "study_program", "study_group"
     )]
@@ -31,6 +31,19 @@ def group_key(group: GroupSelector | StudentProfile) -> str:
         raise HTTPException(status_code=409, detail="PROFILE_INCOMPLETE: university context is required")
     normalized = [" ".join(value.strip().casefold().replace("ё", "е").split()) for value in items]
     return hashlib.sha256(json.dumps(normalized, ensure_ascii=False).encode()).hexdigest()
+
+
+async def resolve_schedule_group(db: AsyncSession, study_group_id: int):
+    """Validate group ID, returning ORM StudyGroup with its parents eager-loaded."""
+    group = await load_group(db, study_group_id)
+    if group is None:
+        raise HTTPException(status_code=404, detail="Study group not found")
+    return group
+
+
+def legacy_group_key_from_entity(group) -> str:
+    """Snapshot legacy key from canonical context, not untrusted client strings."""
+    return group_key(GroupSelector(**context_from_group(group)))
 
 
 def period_bounds(*, day: date | None = None, week: date | None = None) -> tuple[datetime, datetime]:
@@ -49,35 +62,35 @@ def period_bounds(*, day: date | None = None, week: date | None = None) -> tuple
     return start.astimezone(timezone.utc), end.astimezone(timezone.utc)
 
 
-async def ensure_schedule_access(db: AsyncSession, user: User, key: str) -> None:
+async def ensure_schedule_access(db: AsyncSession, user: User, study_group_id: int) -> None:
     if user.role == "admin":
         return
     if user.role != "staff":
         raise HTTPException(status_code=403, detail="Staff or admin required")
     allowed = await db.scalar(
-        select(staff_schedule_groups.c.group_key).where(
+        select(staff_schedule_groups.c.study_group_id).where(
             staff_schedule_groups.c.staff_id == user.id,
-            staff_schedule_groups.c.group_key == key,
+            staff_schedule_groups.c.study_group_id == study_group_id,
         )
     )
     if allowed is None:
         raise HTTPException(status_code=403, detail="Not authorized for this study group")
 
 
-async def get_student_key(db: AsyncSession, user: User) -> str:
+async def get_student_group_id(db: AsyncSession, user: User) -> int:
     if user.role != "student":
         raise HTTPException(status_code=403, detail="Student access only")
     profile = await db.get(StudentProfile, user.id)
-    if profile is None:
-        raise HTTPException(status_code=409, detail="PROFILE_INCOMPLETE: missing student profile")
-    return group_key(profile)
+    if profile is None or profile.study_group_id is None:
+        raise HTTPException(status_code=409, detail="PROFILE_INCOMPLETE: select study_group_id")
+    return profile.study_group_id
 
 
-async def list_schedule(db: AsyncSession, key: str, *, day: date | None, week: date | None) -> list[ScheduleEntry]:
+async def list_schedule(db: AsyncSession, study_group_id: int, *, day: date | None, week: date | None) -> list[ScheduleEntry]:
     start, end = period_bounds(day=day, week=week)
     result = await db.scalars(
         select(ScheduleEntry).where(
-            ScheduleEntry.group_key == key,
+            ScheduleEntry.study_group_id == study_group_id,
             or_(
                 and_(ScheduleEntry.starts_at < end, ScheduleEntry.ends_at > start),
                 and_(ScheduleEntry.original_starts_at < end, ScheduleEntry.original_ends_at > start),
@@ -98,10 +111,17 @@ async def list_schedule(db: AsyncSession, key: str, *, day: date | None, week: d
 
 
 async def create_schedule(db: AsyncSession, user: User, payload: ScheduleCreate) -> ScheduleEntry:
-    key = group_key(payload)
-    await ensure_schedule_access(db, user, key)
-    data = payload.model_dump()
-    item = ScheduleEntry(**data, group_key=key, created_by=user.id)
+    group = await resolve_schedule_group(db, payload.study_group_id)
+    await ensure_schedule_access(db, user, group.id)
+    context = context_from_group(group)
+    # Old schema still requires these strings and group_key. They no longer
+    # determine the identity of the group or grant authorization.
+    item = ScheduleEntry(
+        **payload.model_dump(),
+        **context,
+        group_key=legacy_group_key_from_entity(group),
+        created_by=user.id,
+    )
     db.add(item)
     await db.commit()
     await db.refresh(item)
@@ -112,7 +132,9 @@ async def update_schedule(db: AsyncSession, user: User, entry_id: int, payload: 
     row = await db.get(ScheduleEntry, entry_id)
     if row is None:
         raise HTTPException(status_code=404, detail="Schedule entry not found")
-    await ensure_schedule_access(db, user, row.group_key)
+    if row.study_group_id is None:
+        raise HTTPException(status_code=409, detail="UNMIGRATED_SCHEDULE: study_group_id is missing")
+    await ensure_schedule_access(db, user, row.study_group_id)
     if row.status == "CANCELLED":
         raise HTTPException(status_code=409, detail="Cancelled lessons are immutable")
 

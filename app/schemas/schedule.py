@@ -14,7 +14,8 @@ class GroupSelector(BaseModel):
     study_group: str = Field(min_length=1, max_length=100)
 
 
-class ScheduleCreate(GroupSelector):
+class ScheduleCreate(BaseModel):
+    study_group_id: int = Field(gt=0)
     subject: str = Field(min_length=1, max_length=255)
     room: str | None = Field(default=None, max_length=100)
     teacher: str | None = Field(default=None, max_length=255)
@@ -48,6 +49,7 @@ class ScheduleUpdate(BaseModel):
 
 class ScheduleRead(GroupSelector):
     model_config = ConfigDict(from_attributes=True)
+    study_group_id: int | None
     id: int
     subject: str
     room: str | None
@@ -61,5 +63,6 @@ class ScheduleRead(GroupSelector):
     changed_by: int | None
 
 
-class ScheduleAccessGrant(GroupSelector):
+class ScheduleAccessGrant(BaseModel):
+    study_group_id: int = Field(gt=0)
     staff_id: int = Field(gt=0)

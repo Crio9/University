@@ -11,7 +11,7 @@ from app.core.security import create_access_token
 from app.db.base import Base
 from app.db.database import get_db
 from app.main import app
-from app.models import User, StudentProfile
+from app.models import User, StudentProfile, University, Faculty, StudyProgram, StudyGroup
 from app.models.schedule import ScheduleEntry
 
 
@@ -59,17 +59,23 @@ async def test_schedule_pg_full_flow():
 
             await db.flush()
 
-            # Теперь пользователь id=1 существует в транзакции
-            db.add(
-                StudentProfile(
-                    user_id=1,
-                    university="ДГТУ",
-                    faculty="ФИСТ",
-                    study_program="ПМИ",
-                    study_group="ИВТ-31",
-                    course=3,
-                )
-            )
+            # A canonical StudyGroup is the source of identity for Schedule.
+            university = University(code="DSTU", name="Донской государственный технический университет")
+            faculty = Faculty(code="FIST", name="ФИТ", university=university)
+            program = StudyProgram(code="PMI", name="ПМИ", faculty=faculty)
+            study_group = StudyGroup(code="IVT-31", name="ИВТ-31", program=program)
+            db.add(study_group)
+            await db.flush()
+            group_id = study_group.id
+            db.add(StudentProfile(
+                user_id=1,
+                study_group_id=group_id,
+                university="ДГТУ",
+                faculty="ФИСТ",
+                study_program="ПМИ",
+                study_group="ИВТ-31",
+                course=3,
+            ))
 
             await db.commit()
 
@@ -79,17 +85,24 @@ async def test_schedule_pg_full_flow():
         app.dependency_overrides[get_db] = override_db
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             headers = {role: {"Authorization": "Bearer " + create_access_token(str(i))} for role, i in [("student", 1), ("staff", 2), ("admin", 3)]}
-            group = dict(university="ДГТУ", faculty="ФИСТ", study_program="ПМИ", study_group="ИВТ-31")
+            group = dict(study_group_id=group_id)
             lesson = dict(**group, subject="Backend", starts_at="2026-11-04T10:00:00+03:00", ends_at="2026-11-04T11:30:00+03:00")
             assert (await client.post("/api/v1/schedule", json=lesson, headers=headers["student"])).status_code == 403
             assert (await client.post("/api/v1/schedule", json=lesson, headers=headers["staff"])).status_code == 403
+            unknown = await client.post("/api/v1/schedule", json={**lesson, "study_group_id": 999999}, headers=headers["admin"])
+            assert unknown.status_code == 404, unknown.text
             created = await client.post("/api/v1/schedule", json=lesson, headers=headers["admin"])
             assert created.status_code == 201, created.text
             entry = created.json()["id"]
+            assert created.json()["study_group_id"] == group_id
+            group_view = await client.get(f"/api/v1/schedule/group?study_group_id={group_id}&date=2026-11-04", headers=headers["admin"])
+            assert group_view.status_code == 200 and len(group_view.json()) == 1, group_view.text
             assert len((await client.get("/api/v1/schedule/me?date=2026-11-04", headers=headers["student"])).json()) == 1
             assert (await client.get("/api/v1/schedule/me?date=2026-11-05", headers=headers["student"])).json() == []
             allowed = await client.post("/api/v1/schedule/access/grant", headers=headers["admin"], json={**group, "staff_id": 2})
             assert allowed.status_code == 204
+            permitted_view = await client.get(f"/api/v1/schedule/group?study_group_id={group_id}&date=2026-11-04", headers=headers["staff"])
+            assert permitted_view.status_code == 200 and len(permitted_view.json()) == 1, permitted_view.text
             moved = await client.patch(f"/api/v1/schedule/{entry}", headers=headers["staff"], json={"status": "MOVED", "starts_at": "2026-11-05T10:00:00+03:00", "ends_at": "2026-11-05T11:30:00+03:00"})
             assert moved.status_code == 200, moved.text
             for day in ("2026-11-04", "2026-11-05"):

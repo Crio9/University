@@ -1,4 +1,4 @@
-"""REST API for schedule on the develop branch."""
+"""Schedule routes backed by canonical StudyGroup IDs."""
 from datetime import date
 
 from fastapi import APIRouter, Depends, Query, status, HTTPException
@@ -12,9 +12,10 @@ from app.dependencies.auth import get_current_user, require_roles
 from app.models.schedule import staff_schedule_groups
 from app.models.user import User
 from app.schemas.schedule import GroupSelector, ScheduleAccessGrant, ScheduleCreate, ScheduleRead, ScheduleUpdate
+from app.services.university import context_from_group
 from app.services.schedule import (
-    create_schedule, ensure_schedule_access, get_student_key, group_key,
-    list_schedule, update_schedule,
+    create_schedule, ensure_schedule_access, get_student_group_id,
+    group_key, list_schedule, resolve_schedule_group, update_schedule,
 )
 
 router = APIRouter(prefix="/schedule", tags=["schedule"])
@@ -27,28 +28,21 @@ async def my_schedule(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    key = await get_student_key(db, user)
-    return await list_schedule(db, key, day=day, week=week)
+    group_id = await get_student_group_id(db, user)
+    return await list_schedule(db, group_id, day=day, week=week)
 
 
 @router.get("/group", response_model=list[ScheduleRead])
 async def group_schedule(
-    university: str,
-    faculty: str,
-    study_program: str,
-    study_group: str,
+    study_group_id: int = Query(gt=0),
     day: date | None = Query(None, alias="date"),
     week: date | None = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_roles("staff", "admin")),
 ):
-    group = GroupSelector(
-        university=university, faculty=faculty,
-        study_program=study_program, study_group=study_group,
-    )
-    key = group_key(group)
-    await ensure_schedule_access(db, user, key)
-    return await list_schedule(db, key, day=day, week=week)
+    await resolve_schedule_group(db, study_group_id)
+    await ensure_schedule_access(db, user, study_group_id)
+    return await list_schedule(db, study_group_id, day=day, week=week)
 
 
 @router.post("", response_model=ScheduleRead, status_code=status.HTTP_201_CREATED)
@@ -79,10 +73,16 @@ async def grant_group_permission(
     staff = await db.get(User, payload.staff_id)
     if staff is None or staff.role != "staff":
         raise HTTPException(status_code=404, detail="Staff user not found")
-    key = group_key(payload)
+    group = await resolve_schedule_group(db, payload.study_group_id)
+    key = group_key(GroupSelector(**context_from_group(group)))
+    # The legacy (staff_id, group_key) PK must still be populated until Commit 3.
     insert = pg_insert if db.get_bind().dialect.name == "postgresql" else sqlite_insert
     await db.execute(
-        insert(staff_schedule_groups).values(staff_id=staff.id, group_key=key)
-        .on_conflict_do_nothing(index_elements=["staff_id", "group_key"])
+        insert(staff_schedule_groups)
+        .values(staff_id=staff.id, group_key=key, study_group_id=group.id)
+        .on_conflict_do_update(
+            index_elements=["staff_id", "group_key"],
+            set_={"study_group_id": group.id},
+        )
     )
     await db.commit()

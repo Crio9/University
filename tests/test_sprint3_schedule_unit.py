@@ -5,7 +5,7 @@ import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
 
-from app.schemas.schedule import GroupSelector, ScheduleCreate, ScheduleUpdate
+from app.schemas.schedule import GroupSelector, ScheduleAccessGrant, ScheduleCreate, ScheduleUpdate
 from app.services.schedule import group_key, period_bounds
 
 
@@ -37,9 +37,21 @@ def test_day_week_bounds_are_exclusive_and_monday_based():
 
 
 def test_time_validation():
-    fields = dict(university="ДГТУ", faculty="ФИСТ", study_program="ПМИ", study_group="ИВТ-31", subject="Math")
+    fields = dict(study_group_id=12, subject="Math")
     with pytest.raises(ValidationError):
         ScheduleCreate(**fields, starts_at="2026-11-04T10:00:00", ends_at="2026-11-04T12:00:00")
     with pytest.raises(ValidationError):
         ScheduleCreate(**fields, starts_at="2026-11-04T12:00:00+03:00", ends_at="2026-11-04T10:00:00+03:00")
     assert ScheduleUpdate(status="CANCELLED").status == "CANCELLED"
+
+
+def test_new_requests_use_positive_canonical_group_id():
+    with pytest.raises(ValidationError):
+        ScheduleAccessGrant(staff_id=2, study_group_id=0)
+    with pytest.raises(ValidationError):
+        ScheduleCreate(
+            study_group_id=-1, subject="Math",
+            starts_at="2026-11-04T10:00:00+03:00",
+            ends_at="2026-11-04T11:30:00+03:00",
+        )
+    assert ScheduleAccessGrant(staff_id=2, study_group_id=12).study_group_id == 12
