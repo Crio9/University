@@ -8,6 +8,7 @@ from app.models.student_interest import student_interests
 from app.models.university import Faculty, StudyGroup, StudyProgram, University
 from app.models.user import User
 from app.models.schedule import ScheduleEntry, staff_schedule_groups
+from app.models.appeal import Appeal
 
 __all__ = [
     "Base",
@@ -29,4 +30,5 @@ __all__ = [
     "UserSavedPost",
     "ScheduleEntry",
     "staff_schedule_groups",
+    "Appeal",
 ]

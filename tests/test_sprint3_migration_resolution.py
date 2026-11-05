@@ -77,4 +77,4 @@ def test_only_one_alembic_head_after_merge():
     config = Config(str(root / "alembic.ini"))
     config.set_main_option("script_location", str(root / "alembic"))
     heads = ScriptDirectory.from_config(config).get_heads()
-    assert heads == ["0006_schedule_group_fk"]
+    assert heads == ["0007_merge_appeals_schedule"]
