@@ -1,7 +1,8 @@
+
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import and_, case, or_, select
+from sqlalchemy import case, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_db
@@ -13,6 +14,7 @@ from app.models.student_interest import student_interests
 from app.models.user import User
 from app.schemas.post import PostCreate, PostRead, PostUpdate
 from app.services.audience import matches_audience, synchronize_targeting
+from app.services.university import load_group
 from app.services.saved_posts import (
     list_saved_posts,
     saved_post_ids,
@@ -48,32 +50,35 @@ async def get_smart_feed(
             detail="Student profile not found",
         )
 
+    group = (
+        await load_group(db, profile.study_group_id)
+        if profile.study_group_id
+        else None
+    )
+
+    audience_context = {
+        "faculty": group.program.faculty.name if group else profile.faculty,
+        "program": group.program.name if group else profile.study_program,
+        "group": group.name if group else profile.study_group,
+        "course": profile.course,
+    }
+
     now = datetime.now(timezone.utc)
     deadline_limit = now + timedelta(days=7)
 
-    legacy_targeting = and_(
-        (Post.target_faculty.is_(None)) | (Post.target_faculty == profile.faculty),
-        (Post.target_course.is_(None)) | (Post.target_course == profile.course),
-        (Post.target_program.is_(None))
-        | (Post.target_program == profile.study_program),
-    )
-    query = (
-        select(Post)
-        .where(or_(Post.target_audience.is_not(None), legacy_targeting))
-        .order_by(
-            case(
-                (
-                    (Post.deadline >= now) & (Post.deadline <= deadline_limit),
-                    0,
-                ),
-                else_=1,
+    query = select(Post).order_by(
+        case(
+            (
+                (Post.deadline >= now) & (Post.deadline <= deadline_limit),
+                0,
             ),
-            case(
-                (Post.importance == "critical", 0),
-                else_=1,
-            ),
-            Post.created_at.desc(),
-        )
+            else_=1,
+        ),
+        case(
+            (Post.importance == "critical", 0),
+            else_=1,
+        ),
+        Post.created_at.desc(),
     )
 
     result = await db.execute(query)
@@ -109,8 +114,28 @@ async def get_smart_feed(
     filtered_posts = []
 
     for post in posts:
-        if not matches_audience(post.target_audience, profile):
+        if not matches_audience(post.target_audience, audience_context):
             continue
+
+        if post.target_audience is None:
+            if (
+                post.target_faculty
+                and post.target_faculty != audience_context["faculty"]
+            ):
+                continue
+
+            if (
+                post.target_program
+                and post.target_program != audience_context["program"]
+            ):
+                continue
+
+            if (
+                post.target_course is not None
+                and post.target_course != audience_context["course"]
+            ):
+                continue
+
         category_name = category_names.get(post.category_id, "")
         is_important = post.importance == "critical"
 
@@ -121,7 +146,10 @@ async def get_smart_feed(
             or "админ" in category_name
         )
 
-        is_opportunity = "opportunit" in category_name or "возможност" in category_name
+        is_opportunity = (
+            "opportunit" in category_name
+            or "возможност" in category_name
+        )
 
         has_matching_interest = post.id in matching_post_ids
 
@@ -206,22 +234,28 @@ async def create_post(
 ):
     data = synchronize_targeting(post_data.model_dump())
     tag_ids = data.pop("tag_ids", [])
+
     if await db.get(Category, data["category_id"]) is None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown category"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unknown category",
         )
+
     post = Post(
         **data,
         author_id=current_user.id,
     )
+
     if tag_ids:
         tag_result = await db.execute(select(Tag).where(Tag.id.in_(tag_ids)))
         tags = list(tag_result.scalars().all())
+
         if len(tags) != len(set(tag_ids)):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Unknown tag in tag_ids",
             )
+
         post.tags = tags
 
     db.add(post)
@@ -276,24 +310,30 @@ async def update_post(
     updates = synchronize_targeting(
         post_data.model_dump(exclude_unset=True), current=post
     )
+
     tag_ids = updates.pop("tag_ids", None)
+
     if updates.get("category_id") is not None and await db.get(
         Category, updates["category_id"]
     ) is None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown category"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unknown category",
         )
+
     for field, value in updates.items():
         setattr(post, field, value)
 
     if tag_ids is not None:
         tag_result = await db.execute(select(Tag).where(Tag.id.in_(tag_ids)))
         tags = list(tag_result.scalars().all())
+
         if len(tags) != len(set(tag_ids)):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Unknown tag in tag_ids",
             )
+
         post.tags = tags
 
     await db.commit()

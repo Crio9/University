@@ -7,6 +7,7 @@ from app.models.saved_post import UserSavedPost
 from app.models.student_interest import student_interests
 from app.models.university import Faculty, StudyGroup, StudyProgram, University
 from app.models.user import User
+from app.models.appeal import Appeal
 
 __all__ = [
     "Base",
@@ -26,4 +27,5 @@ __all__ = [
     "RawContent",
     "RawContentStatus",
     "UserSavedPost",
+    "Appeal",
 ]

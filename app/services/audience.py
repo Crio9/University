@@ -64,44 +64,35 @@ async def normalize_audience(
     return TargetAudience.model_validate(data), unresolved
 
 
-def matches_audience(audience: dict | None, profile: StudentProfile) -> bool:
+def matches_audience(audience: dict | None, profile: dict) -> bool:
     if audience is None:
         return True
 
-    # A linked group defines the whole context (FR-1.6); legacy text is the
-    # fallback for profiles that were left unlinked by the migration.
-    if profile.study_group_id is not None:
-        group = profile.study_group
-        if group is None:
-            return False
-        derived = context_from_group(group)
-        faculty = derived["faculty"]
-        program = derived["study_program"]
-        group_name = derived["study_group"]
-    else:
-        faculty = profile.faculty
-        program = profile.study_program
-        group_name = profile.study_group
-
     values = {
-        "faculty": faculty,
-        "program": program,
-        "course": profile.course,
-        "group": group_name,
+        "faculty": profile.get("faculty"),
+        "program": profile.get("program"),
+        "course": profile.get("course"),
+        "group": profile.get("group"),
     }
+
     for field, value in values.items():
         allowed = audience.get(field, [])
+
         if not allowed:
             continue
+
         if value is None:
             return False
+
         if field == "course":
             if value not in allowed:
                 return False
-        elif audience_key(value) not in {audience_key(item) for item in allowed}:
+        elif audience_key(value) not in {
+            audience_key(item) for item in allowed
+        }:
             return False
-    return True
 
+    return True
 
 def synchronize_targeting(data: dict, current=None) -> dict:
     """Keep legacy scalar fields usable without discarding group restrictions."""
