@@ -175,6 +175,25 @@ async def test_canonical_profile_feed_schedule_permissions_and_moves():
                 json={"status": "NORMAL"},
             )
             assert immutable.status_code == 409, immutable.text
+
+            # FR-4 / NFR-8.2: student -> appeal -> staff status -> student sees it.
+            appeal = await client.post(
+                "/api/v1/appeals", headers=headers["student_a"],
+                json={"recipient_id": ids["staff"], "category": "ACADEMIC",
+                      "subject": "Уточнение зачёта", "message": "Пожалуйста, проверьте результат зачёта"},
+            )
+            assert appeal.status_code == 201, appeal.text
+            appeal_id = appeal.json()["id"]
+            assert appeal.json()["status"] == "CREATED"
+            queue = await client.get("/api/v1/appeals", headers=headers["staff"])
+            assert queue.status_code == 200 and appeal_id in [x["id"] for x in queue.json()]
+            changed = await client.patch(
+                f"/api/v1/appeals/{appeal_id}/status", headers=headers["staff"],
+                json={"status": "IN_REVIEW"},
+            )
+            assert changed.status_code == 200 and changed.json()["status"] == "IN_REVIEW", changed.text
+            mine = await client.get(f"/api/v1/appeals/{appeal_id}", headers=headers["student_a"])
+            assert mine.status_code == 200 and mine.json()["status"] == "IN_REVIEW"
     finally:
         app.dependency_overrides.pop(get_db, None)
         await engine.dispose()

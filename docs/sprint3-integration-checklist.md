@@ -1,16 +1,16 @@
 # Sprint 3 — integrated backend release checklist
 
-This checklist applies to `sprint3-merge` with one Alembic head
-`0006_schedule_group_fk`. Never upgrade a real or shared PostgreSQL database
+This checklist applies to `release-backend` with one Alembic head
+`0007_merge_appeals_schedule`. Never upgrade a real or shared PostgreSQL database
 without a backup and a deployment plan.
 
 ## Pre-merge gates
 
-- [ ] Every commit 1–4 change is pushed to `sprint3-merge` and reviewed.
+- [ ] Every commit 1–4 change is pushed to `release-backend` and reviewed.
 - [ ] GitHub Actions `PostgreSQL migrations and integration tests` succeeds.
 - [ ] GitHub Actions `Docker Compose smoke test` succeeds.
 - [ ] No pytest tests unexpectedly `SKIPPED` (PostgreSQL integration tests use `TEST_DATABASE_URL`).
-- [ ] Alembic has **one** head: `0006_schedule_group_fk`.
+- [ ] Alembic has **one** head: `0007_merge_appeals_schedule`.
 - [ ] Test the upgrade from clean DB, `0004_schedule`, and `0004_university` in isolated PostgreSQL schemas.
 - [ ] CI validates `/health`, `/openapi.json`, creation of tables, and `seed.py`.
 - [ ] Review code and migration diff, especially historical data compatibility.
@@ -84,3 +84,13 @@ schema completeness or correct business logic.
 4. Use branch protection: required review and both CI checks on `develop`.
 5. Merge upstream shared contracts before features that depend on them.
 6. Run data migration tests, not only ORM `create_all()` tests.
+
+## Final Appeals acceptance (FR-4 / FR-5)
+
+- [ ] Tech lead confirms the MVP recipient policy: each appeal is sent to one existing Staff user.
+- [ ] Student can read only own appeals via `/appeals/me` and `/appeals/{id}`.
+- [ ] Staff sees only appeals addressed to them; Admin may see all.
+- [ ] `CREATED -> IN_REVIEW -> CLOSED` is enforced; forbidden transitions return 409.
+- [ ] PostgreSQL API test and full PostgreSQL-backed pytest pass without skips.
+- [ ] Run p95 benchmarks on agreed data volume and machine; record parameters and results (NFR-3).
+- [ ] GitHub CI and Docker smoke check pass on the final release-backend commit.

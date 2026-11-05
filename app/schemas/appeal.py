@@ -1,4 +1,4 @@
-
+"""Sprint 3 appeal contracts. Recipient is an existing Staff user ID."""
 from datetime import datetime
 from enum import Enum
 
@@ -19,6 +19,7 @@ class AppealStatus(str, Enum):
 
 
 class AppealCreate(BaseModel):
+    recipient_id: int = Field(gt=0, description="Existing staff user ID who will handle this appeal")
     category: AppealCategory
     subject: str = Field(min_length=3, max_length=255)
     message: str = Field(min_length=10, max_length=10000)
@@ -29,7 +30,7 @@ class AppealResponse(BaseModel):
 
     id: int
     student_id: int
-    staff_id: int | None
+    staff_id: int | None  # recipient; NULL for historic unassigned appeals
     category: AppealCategory
     subject: str
     message: str

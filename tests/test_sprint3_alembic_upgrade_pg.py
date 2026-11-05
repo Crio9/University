@@ -114,7 +114,7 @@ def test_upgrade_from_either_sprint3_branch_preserves_schedule_and_staff_grants(
 
         with scoped_engine.connect() as connection:
             heads = connection.execute(text("SELECT version_num FROM alembic_version")).scalars().all()
-            assert heads == ["0006_schedule_group_fk"]
+            assert heads == ["0007_merge_appeals_schedule"]
             linked = connection.execute(text("""
                 SELECT s.id, s.group_key, s.university, s.faculty, s.study_program,
                        s.study_group, s.study_group_id, g.code
