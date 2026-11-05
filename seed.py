@@ -10,6 +10,7 @@ from app.models.post import Post
 from app.models.profile import StaffProfile, StudentProfile, TeacherProfile
 from app.models.student_interest import student_interests
 from app.models.user import User
+from app.models.university import StudyGroup
 from app.services.dictionaries import sync_reference_data
 from app.services.university import sync_university_structure
 
@@ -21,6 +22,13 @@ async def seed_data():
         # Canonical university structure (managed seed/import, FR-1.10).
         await sync_university_structure(db)
         await db.flush()
+
+        # Use an existing canonical group; never invent a numeric group ID.
+        demo_group = await db.scalar(
+            select(StudyGroup).where(StudyGroup.code == "IVT-21")
+        )
+        if demo_group is None:
+            raise RuntimeError("Canonical demo group IVT-21 was not seeded")
 
         cats_res = await db.execute(select(Category))
         categories = {cat.code: cat for cat in cats_res.scalars().all() if cat.code}
@@ -65,10 +73,11 @@ async def seed_data():
                     db.add(
                         StudentProfile(
                             user_id=user.id,
-                            university="МГУ",
-                            faculty="ФИСТ",
+                            study_group_id=demo_group.id,
+                            university="Донской государственный технический университет",
+                            faculty="ФИТ",
                             course=2,
-                            study_group="ИТ-201",
+                            study_group="ИВТ-21",
                             study_program="ПМИ",
                         )
                     )
@@ -98,6 +107,20 @@ async def seed_data():
                             position="Инспектор",
                         )
                     )
+            # Re-running seed also fixes the old unlinked demo student.
+            # Never overwrite a canonical group already chosen manually.
+            if udata["role"] == "student" and user.role == "student":
+                profile = await db.get(StudentProfile, user.id)
+                if profile is None:
+                    profile = StudentProfile(user_id=user.id)
+                    db.add(profile)
+                if profile.study_group_id is None:
+                    profile.study_group_id = demo_group.id
+                    profile.university = "Донской государственный технический университет"
+                    profile.faculty = "ФИТ"
+                    profile.study_program = "ПМИ"
+                    profile.study_group = "ИВТ-21"
+                    profile.course = profile.course or 2
             users[udata["role"]] = user
 
         now = datetime.now(timezone.utc)

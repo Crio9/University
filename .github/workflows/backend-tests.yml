@@ -9,11 +9,13 @@ on:
       - develop
       - sprint3
       - sprint3-merge
+      - release-backend
   pull_request:
     branches:
       - develop
       - sprint3
       - sprint3-merge
+      - release-backend
 
 permissions:
   contents: read
@@ -63,7 +65,7 @@ jobs:
           from alembic.config import Config
           from alembic.script import ScriptDirectory
           heads = ScriptDirectory.from_config(Config('alembic.ini')).get_heads()
-          assert heads == ['0006_schedule_group_fk'], f'Unexpected Alembic heads: {heads}'
+          assert len(heads) == 1, f'Expected one Alembic head, got: {heads}'
           print('Alembic single head:', heads[0])
           PY
           alembic upgrade head
@@ -80,7 +82,10 @@ jobs:
                       count = (await conn.execute(text(f'SELECT count(*) FROM {table}'))).scalar_one()
                       print(f'{table}: {count} rows')
                   version = (await conn.execute(text('SELECT version_num FROM alembic_version'))).scalar_one()
-                  assert version == '0006_schedule_group_fk', version
+                  from alembic.config import Config
+                  from alembic.script import ScriptDirectory
+                  head = ScriptDirectory.from_config(Config('alembic.ini')).get_current_head()
+                  assert version == head, f'Database at {version}, expected {head}'
               await engine.dispose()
 
           asyncio.run(verify())
@@ -125,6 +130,7 @@ jobs:
           for endpoint in (
               '/api/v1/universities', '/api/v1/posts/feed',
               '/api/v1/schedule/me', '/api/v1/schedule/group',
+              '/api/v1/appeals/me', '/api/v1/appeals/{appeal_id}/status',
               '/api/v1/ingest/sync',
           ):
               assert endpoint in paths, endpoint
