@@ -1,6 +1,11 @@
 from sqlalchemy import JSON, CheckConstraint, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column
+from typing import TYPE_CHECKING
+
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from app.models.university import StudyGroup
 
 from app.db.base import Base
 
@@ -26,6 +31,11 @@ class StudentProfile(Base):
         nullable=True,
         index=True,
     )
+    # ORM object, distinct from the legacy string field study_group.
+    group_entity: Mapped["StudyGroup | None"] = relationship(
+        "StudyGroup", foreign_keys=[study_group_id], lazy="selectin"
+    )
+
     # Legacy Sprint 2 text values. Kept so migration never loses the original
     # data; they mirror the linked group whenever a group is selected.
     university: Mapped[str | None] = mapped_column(String(255), nullable=True)

@@ -14,8 +14,8 @@ from app.models.university import Faculty, StudyGroup, StudyProgram
 from app.schemas.ai_classification import TargetAudience
 from app.services.university import (
     audience_key,
-    context_from_group,
     load_canonical_names,
+    student_context,
 )
 
 
@@ -68,26 +68,14 @@ def matches_audience(audience: dict | None, profile: StudentProfile) -> bool:
     if audience is None:
         return True
 
-    # A linked group defines the whole context (FR-1.6); legacy text is the
-    # fallback for profiles that were left unlinked by the migration.
-    if profile.study_group_id is not None:
-        group = profile.study_group
-        if group is None:
-            return False
-        derived = context_from_group(group)
-        faculty = derived["faculty"]
-        program = derived["study_program"]
-        group_name = derived["study_group"]
-    else:
-        faculty = profile.faculty
-        program = profile.study_program
-        group_name = profile.study_group
-
+    # A linked profile uses the canonical ORM group; an unlinked legacy
+    # profile keeps using its original text until migration can resolve it.
+    context = student_context(profile)
     values = {
-        "faculty": faculty,
-        "program": program,
-        "course": profile.course,
-        "group": group_name,
+        "faculty": context.faculty,
+        "program": context.program,
+        "course": context.course,
+        "group": context.group,
     }
     for field, value in values.items():
         allowed = audience.get(field, [])

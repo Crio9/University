@@ -3,12 +3,15 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import and_, case, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.db.database import get_db
 from app.dependencies.auth import get_current_user, require_roles
 from app.models.dictionaries import Category, Tag
 from app.models.post import Post, post_tags
 from app.models.profile import StudentProfile
+from app.models.university import Faculty, StudyGroup, StudyProgram
+from app.services.university import student_context
 from app.models.student_interest import student_interests
 from app.models.user import User
 from app.schemas.post import PostCreate, PostRead, PostUpdate
@@ -40,7 +43,16 @@ async def get_smart_feed(
             detail="Only students can access the smart feed",
         )
 
-    profile = await db.get(StudentProfile, current_user.id)
+    profile = await db.scalar(
+        select(StudentProfile)
+        .where(StudentProfile.user_id == current_user.id)
+        .options(
+            selectinload(StudentProfile.group_entity)
+            .selectinload(StudyGroup.program)
+            .selectinload(StudyProgram.faculty)
+            .selectinload(Faculty.university)
+        )
+    )
 
     if profile is None:
         raise HTTPException(
@@ -48,14 +60,15 @@ async def get_smart_feed(
             detail="Student profile not found",
         )
 
+    context = student_context(profile)
     now = datetime.now(timezone.utc)
     deadline_limit = now + timedelta(days=7)
 
     legacy_targeting = and_(
-        (Post.target_faculty.is_(None)) | (Post.target_faculty == profile.faculty),
-        (Post.target_course.is_(None)) | (Post.target_course == profile.course),
+        (Post.target_faculty.is_(None)) | (Post.target_faculty == context.faculty),
+        (Post.target_course.is_(None)) | (Post.target_course == context.course),
         (Post.target_program.is_(None))
-        | (Post.target_program == profile.study_program),
+        | (Post.target_program == context.program),
     )
     query = (
         select(Post)

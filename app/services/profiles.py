@@ -7,6 +7,7 @@ from app.models.profile import StaffProfile, StudentProfile, TeacherProfile
 from app.models.student_interest import student_interests
 from app.models.university import Faculty, StudyGroup, StudyProgram
 from app.models.user import User
+from app.services.university import load_profile, student_context
 from app.schemas.profile import (
     StaffProfileUpdate,
     StudentProfileUpdate,
@@ -17,10 +18,8 @@ from app.schemas.profile import (
 async def read_profile(db: AsyncSession, current_user: User) -> dict:
     profile_data = {}
     if current_user.role == "student":
-        res = await db.execute(
-            select(StudentProfile).where(StudentProfile.user_id == current_user.id)
-        )
-        st = res.scalar_one_or_none()
+        st = await load_profile(db, current_user.id)
+        context = student_context(st) if st is not None else None
         interests_res = await db.execute(
             select(student_interests.c.tag_id).where(
                 student_interests.c.student_id == current_user.id
@@ -28,11 +27,12 @@ async def read_profile(db: AsyncSession, current_user: User) -> dict:
         )
         interest_ids = list(interests_res.scalars().all())
         profile_data = {
-            "university": st.university if st else None,
-            "faculty": st.faculty if st else None,
-            "course": st.course if st else None,
-            "study_group": st.study_group if st else None,
-            "study_program": st.study_program if st else None,
+            "university": context.university if context else None,
+            "faculty": context.faculty if context else None,
+            "course": context.course if context else None,
+            "study_group": context.group if context else None,
+            "study_program": context.program if context else None,
+            "study_group_id": st.study_group_id if st else None,
             "interest_ids": interest_ids,
         }
     elif current_user.role == "teacher":

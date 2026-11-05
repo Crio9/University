@@ -84,10 +84,32 @@ async def sync_university_structure(
 
 
 def context_from_group(group: StudyGroup) -> dict:
-    """Read-only projection of the university context derived from a group."""
+    """Return canonical labels for known group codes; otherwise use DB labels.
+
+    The historical 0004_university migration seeded some display names which
+    differ from current STRUCTURE. Do not rewrite an applied migration here:
+    project known codes to one consistent name until a separate data migration.
+    """
     program = group.program
     faculty = program.faculty
     university = faculty.university
+    for uni_spec in STRUCTURE:
+        if uni_spec.code != university.code:
+            continue
+        for faculty_spec in uni_spec.faculties:
+            if faculty_spec.code != faculty.code:
+                continue
+            for program_spec in faculty_spec.programs:
+                if program_spec.code != program.code:
+                    continue
+                for group_spec in program_spec.groups:
+                    if group_spec.code == group.code:
+                        return {
+                            "university": uni_spec.name,
+                            "faculty": faculty_spec.name,
+                            "study_program": program_spec.name,
+                            "study_group": group_spec.name,
+                        }
     return {
         "university": university.name,
         "faculty": faculty.name,
@@ -115,7 +137,9 @@ def student_context(profile: StudentProfile) -> StudentContext:
     group, so Sprint 2 targeting keeps working after the migration.
     """
     if profile.study_group_id is not None:
-        derived = context_from_group(profile.study_group)
+        if profile.group_entity is None:
+            raise ValueError("StudentProfile has study_group_id but no loaded StudyGroup")
+        derived = context_from_group(profile.group_entity)
         return StudentContext(
             university=derived["university"],
             faculty=derived["faculty"],
@@ -138,7 +162,7 @@ async def load_profile(db: AsyncSession, user_id: int) -> StudentProfile | None:
         select(StudentProfile)
         .where(StudentProfile.user_id == user_id)
         .options(
-            selectinload(StudentProfile.study_group)
+            selectinload(StudentProfile.group_entity)
             .selectinload(StudyGroup.program)
             .selectinload(StudyProgram.faculty)
             .selectinload(Faculty.university)
@@ -177,6 +201,27 @@ def _remember(
             bucket.append(value)
 
 
+def _remember_db_name(target: dict[str, list[str]], name: str, code: str) -> None:
+    """Fold historical DB display names into the STRUCTURE entry by code.
+
+    The migration may say FIST=ФИСТ while STRUCTURE says FIST=ФИТ. Those
+    must not become two separate faculty candidates. Do not claim a legacy
+    name that another canonical entity already owns (e.g. ИОТ across unis).
+    """
+    owning_key = next((key for key, values in target.items() if code in values), None)
+    if owning_key is None:
+        _remember(target, name, (), code)
+        return
+    normalized_name = audience_key(name)
+    conflict = any(
+        key != owning_key
+        and any(audience_key(alias) == normalized_name for alias in aliases)
+        for key, aliases in target.items()
+    )
+    if not conflict and name not in target[owning_key]:
+        target[owning_key].append(name)
+
+
 async def load_canonical_names(db: AsyncSession) -> CanonicalNames:
     """Collect canonical names plus the aliases declared in ``STRUCTURE``.
 
@@ -202,11 +247,11 @@ async def load_canonical_names(db: AsyncSession) -> CanonicalNames:
                     )
 
     for row in await db.scalars(select(Faculty)):
-        _remember(faculties, row.name, (), row.code)
+        _remember_db_name(faculties, row.name, row.code)
     for row in await db.scalars(select(StudyProgram)):
-        _remember(programs, row.name, (), row.code)
+        _remember_db_name(programs, row.name, row.code)
     for row in await db.scalars(select(StudyGroup)):
-        _remember(groups, row.name, (), row.code)
+        _remember_db_name(groups, row.name, row.code)
 
     return CanonicalNames(faculties=faculties, programs=programs, groups=groups)
 
