@@ -1,8 +1,4 @@
-"""Persist Telegram messages using the existing async RawContent model.
-
-PostgreSQL/SQLite ON CONFLICT makes repeated and concurrent imports idempotent.
-No classification or Post creation is triggered in this source adapter.
-"""
+"""Batch-idempotent storage for Telegram RawContent on PostgreSQL and SQLite."""
 from __future__ import annotations
 
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -12,43 +8,40 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.raw_content import RawContent, RawContentStatus
 from app.services.telegram_source import TelegramMessage
 
+BATCH_SIZE = 100
 
-async def store_telegram_messages(
-    db: AsyncSession, messages: list[TelegramMessage]
-) -> tuple[int, int]:
-    """Write pending rows without modifying duplicates; return inserted, duplicate."""
+
+async def store_telegram_messages(db: AsyncSession, messages: list[TelegramMessage]) -> tuple[int, int]:
+    """Insert in bounded batches; repeated IDs keep their first stored payload.
+
+    Counts duplicates within a single request and against persisted rows.
+    """
     dialect = db.get_bind().dialect.name
     if dialect == "postgresql":
         insert = pg_insert
     elif dialect == "sqlite":
-        insert = sqlite_insert  # Test backend.
+        insert = sqlite_insert
     else:
         raise RuntimeError(f"Unsupported ingestion database dialect: {dialect}")
 
-    inserted = duplicates = 0
-    for message in messages:
-        statement = (
-            insert(RawContent)
-            .values(
+    inserted = 0
+    for start in range(0, len(messages), BATCH_SIZE):
+        batch = messages[start : start + BATCH_SIZE]
+        rows = [
+            dict(
                 source_type="telegram",
-                external_id=message.external_id,
-                raw_text=message.text,
-                source_url=message.source_url,
-                source_published_at=message.published_at,
-                ingest_metadata={
-                    "channel": message.channel,
-                    "message_id": message.message_id,
-                },
+                external_id=item.external_id,
+                raw_text=item.text,
+                source_url=item.source_url,
+                source_published_at=item.published_at,
+                ingest_metadata={"channel": item.channel, "message_id": item.message_id},
                 status=RawContentStatus.PENDING.value,
             )
-            .on_conflict_do_nothing(
-                index_elements=["source_type", "external_id"]
-            )
-            .returning(RawContent.id)
-        )
+            for item in batch
+        ]
+        statement = (insert(RawContent).values(rows)
+                     .on_conflict_do_nothing(index_elements=["source_type", "external_id"])
+                     .returning(RawContent.id))
         result = await db.execute(statement)
-        if result.scalar_one_or_none() is None:
-            duplicates += 1
-        else:
-            inserted += 1
-    return inserted, duplicates
+        inserted += len(result.scalars().all())
+    return inserted, len(messages) - inserted

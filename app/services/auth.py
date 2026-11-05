@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import create_access_token, hash_password, verify_password
-from app.models.profile import StaffProfile, StudentProfile, TeacherProfile
+from app.models.profile import StudentProfile, TeacherProfile
 from app.models.user import User
 from app.schemas.auth import LoginRequest, RegisterRequest
 
@@ -31,8 +31,6 @@ async def register_user(db: AsyncSession, data: RegisterRequest) -> dict:
         db.add(StudentProfile(user_id=user.id))
     elif data.role == "teacher":
         db.add(TeacherProfile(user_id=user.id))
-    elif data.role == "staff":
-        db.add(StaffProfile(user_id=user.id))
 
     await db.commit()
     return {"message": "User registered"}
