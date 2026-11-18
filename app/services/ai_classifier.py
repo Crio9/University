@@ -9,6 +9,7 @@ import httpx
 
 from app.core.config import settings
 from app.core.dictionaries import CATEGORY_CODES, TAG_CODES
+from app.schemas.opportunity import OpportunityFields
 from app.schemas.ai_classification import AIClassificationResult
 
 SYSTEM_PROMPT = (
@@ -60,6 +61,15 @@ confidence — диагностическое число [0,1], не вероя�
     + ", ".join(sorted(CATEGORY_CODES))
     + "\nТеги: "
     + ", ".join(sorted(TAG_CODES))
+)
+
+
+SYSTEM_PROMPT += (
+    "\nДополнительно верни opportunity=null для обычных новостей или объект по этой JSON Schema. "
+    "Извлекай только явные условия, навыки и даты. Названия факультетов и программ бери из текста. "
+    "Для итогов и отмены укажи report или cancelled. Формат unknown при отсутствии сведений. "
+    "Не додумывай географию и ограничения. Даты со смещением часового пояса. "
+    + json.dumps(OpportunityFields.model_json_schema(), ensure_ascii=False)
 )
 
 

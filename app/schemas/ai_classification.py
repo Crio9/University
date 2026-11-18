@@ -27,8 +27,12 @@ class TargetAudience(BaseModel):
         return list(dict.fromkeys(values))
 
 
+from app.schemas.opportunity import OpportunityFields
+
+
 class AIClassificationResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    opportunity: OpportunityFields | None = None
     category: Literal[
         "ACADEMIC",
         "ADMINISTRATIVE",

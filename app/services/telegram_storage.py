@@ -34,7 +34,7 @@ async def store_telegram_messages(db: AsyncSession, messages: list[TelegramMessa
                 raw_text=item.text,
                 source_url=item.source_url,
                 source_published_at=item.published_at,
-                ingest_metadata={"channel": item.channel, "message_id": item.message_id},
+                ingest_metadata={"channel": item.channel, "message_id": item.message_id, **({"links": list(item.links)} if item.links else {})},
                 status=RawContentStatus.PENDING.value,
             )
             for item in batch

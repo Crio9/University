@@ -38,6 +38,8 @@ class TelegramMessage:
     text: str
     published_at: datetime | None = None
 
+    links: tuple[str, ...] = ()
+
     @property
     def external_id(self) -> str:
         return f"{self.channel}:{self.message_id}"
@@ -80,7 +82,9 @@ def parse_telegram_html(html: str, *, channel: str, limit: int = 20) -> list[Tel
             except (ValueError, KeyError):
                 pass
         message_id = int(match.group(2))
-        messages[message_id] = TelegramMessage(username, message_id, text, published_at)
+        messages[message_id] = TelegramMessage(username, message_id, text, published_at, tuple(dict.fromkeys(
+            a["href"] for a in content.select("a[href]") if a["href"].startswith(("https://", "http://"))
+        )))
     return sorted(messages.values(), key=lambda item: item.message_id)[-limit:]
 
 

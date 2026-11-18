@@ -23,6 +23,8 @@ class StudentProfile(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         primary_key=True,
     )
+    catalog_program_id: Mapped[int | None] = mapped_column(ForeignKey("study_programs.id"))
+    preferred_types: Mapped[list | None] = mapped_column(JSON)
     # Canonical university context. A profile with a filled-in context must be
     # linked to exactly one StudyGroup; university/faculty/program are then
     # derived from that group (see app/services/university.py).

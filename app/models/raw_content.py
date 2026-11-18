@@ -54,6 +54,7 @@ class RawContent(Base):
         JSON(none_as_null=True).with_variant(JSONB(none_as_null=True), "postgresql"),
         nullable=True,
     )
+    opportunity_review: Mapped[dict | None] = mapped_column(JSON(none_as_null=True))
     processed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
