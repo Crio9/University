@@ -18,3 +18,5 @@ api_router.include_router(ingest_router)
 api_router.include_router(telegram_ingest_router)
 api_router.include_router(schedule_router)
 api_router.include_router(appeals_router)
+from app.api.opportunities import router as opportunities_router
+api_router.include_router(opportunities_router)
