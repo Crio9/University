@@ -80,6 +80,9 @@ async def process_raw_content(
         await db.flush()
         return raw
 
+    if raw.opportunity_review is not None:
+        return raw
+
     classifier = get_classifier()
     if classifier is None:
         raw.status = RawContentStatus.PENDING.value
@@ -96,6 +99,13 @@ async def process_raw_content(
         if isinstance(payload, dict):
             raw.ai_result = json.loads(json.dumps(payload, default=str))
         result = validate_payload(payload)
+        if result.opportunity is not None:
+            raw.opportunity_review = result.opportunity.model_dump(mode="json") | {"status": "draft"}
+            raw.status = RawContentStatus.PROCESSED.value
+            raw.processing_error = None
+            raw.processed_at = datetime.now(timezone.utc)
+            await db.flush()
+            return raw
         normalized = await normalize_classification(result.model_dump(), db=db)
         if normalized.category is None or not normalized.is_fully_resolved:
             raise NeedsReview(

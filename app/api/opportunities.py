@@ -22,7 +22,12 @@ student = Depends(require_roles("student"))
 def draft(raw):
     data = raw.opportunity_review
     if data is None:
-        data = (raw.ai_result or {}).get("opportunity") or {}
+        # Invalid provider payloads remain inspectable and editable by staff.
+        proposal = (raw.ai_result or {}).get("opportunity")
+        try:
+            return ReviewedOpportunity.model_validate(proposal or {})
+        except ValidationError:
+            return ReviewedOpportunity()
     return ReviewedOpportunity.model_validate(data)
 
 

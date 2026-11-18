@@ -1,3 +1,4 @@
+from app.core.dictionaries import CANONICAL_TAGS
 import pytest
 from sqlalchemy import func, select
 
@@ -54,7 +55,7 @@ async def test_unsafe_classification_does_not_create_post(
     async with env["Session"]() as db:
         assert (await db.scalar(select(func.count()).select_from(Post))) == 0
         assert (await db.scalar(select(func.count()).select_from(Category))) == 5
-        assert (await db.scalar(select(func.count()).select_from(Tag))) == 25
+        assert (await db.scalar(select(func.count()).select_from(Tag))) == len(CANONICAL_TAGS)
 
 
 @pytest.mark.asyncio

@@ -1,3 +1,4 @@
+from app.core.dictionaries import CANONICAL_TAGS
 import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -94,7 +95,7 @@ async def test_sync_reference_data_is_idempotent():
             cats = await session.execute(select(func.count()).select_from(Category))
             tags = await session.execute(select(func.count()).select_from(Tag))
             assert cats.scalar() == 5
-            assert tags.scalar() == 25
+            assert tags.scalar() == len(CANONICAL_TAGS)
     finally:
         await engine.dispose()
 

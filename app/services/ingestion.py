@@ -7,6 +7,8 @@ are de-duplicated on ``(source_type, external_id)``.
 
 from __future__ import annotations
 
+from hashlib import sha256
+
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
@@ -18,6 +20,9 @@ from app.schemas.raw_content import RawContentCreate
 
 async def ingest_raw_content(db: AsyncSession, data: RawContentCreate) -> RawContent:
     """Create (or return the existing) raw content row for the given item."""
+    if not data.external_id and data.source_url:
+        identity = sha256(data.source_url.strip().encode()).hexdigest()
+        data = data.model_copy(update={"external_id": "url:" + identity})
     if data.external_id is not None:
         dialect = db.get_bind().dialect.name
         insert = pg_insert if dialect == "postgresql" else sqlite_insert
