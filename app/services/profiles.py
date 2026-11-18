@@ -7,6 +7,7 @@ from app.models.profile import StaffProfile, StudentProfile, TeacherProfile
 from app.models.student_interest import student_interests
 from app.models.university import Faculty, StudyGroup, StudyProgram
 from app.models.user import User
+from app.models.dictionaries import Tag
 from app.services.university import load_profile, student_context
 from app.schemas.profile import (
     StaffProfileUpdate,
@@ -34,6 +35,9 @@ async def read_profile(db: AsyncSession, current_user: User) -> dict:
             "study_program": context.program if context else None,
             "study_group_id": st.study_group_id if st else None,
             "interest_ids": interest_ids,
+            "study_program_id": st.catalog_program_id if st else None,
+            "preferred_types": (st.preferred_types or []) if st else [],
+            "faculty_id": (await db.get(StudyProgram, st.catalog_program_id)).faculty_id if st and st.catalog_program_id else None,
         }
     elif current_user.role == "teacher":
         res = await db.execute(
@@ -81,7 +85,24 @@ async def update_student_profile(
         profile = StudentProfile(user_id=current_user.id)
         db.add(profile)
 
-    if data.study_group_id is not None:
+    ids = set(data.interest_ids)
+    valid_ids = set(await db.scalars(select(Tag.id).where(Tag.id.in_(ids))))
+    if ids != valid_ids:
+        raise HTTPException(422, "Unknown interest")
+    if "preferred_types" in data.model_fields_set:
+        profile.preferred_types = list(dict.fromkeys(data.preferred_types))
+    if data.study_program_id:
+        program = await db.scalar(select(StudyProgram).where(StudyProgram.id == data.study_program_id)
+                                  .options(selectinload(StudyProgram.faculty).selectinload(Faculty.university)))
+        if not program or program.faculty_id != data.faculty_id or program.faculty.university.code != "DSTU":
+            raise HTTPException(422, "Select a program of the specified DSTU faculty")
+        profile.catalog_program_id = program.id
+        profile.study_group_id = profile.study_group = None
+        profile.university = program.faculty.university.name
+        profile.faculty, profile.study_program = program.faculty.name, program.name
+        profile.course = data.course
+    elif data.study_group_id is not None:
+        profile.catalog_program_id = None
         group = await db.scalar(
             select(StudyGroup)
             .where(StudyGroup.id == data.study_group_id)
@@ -118,7 +139,7 @@ async def update_student_profile(
         delete(student_interests).where(student_interests.c.student_id == current_user.id)
     )
     if data.interest_ids:
-        for tag_id in data.interest_ids:
+        for tag_id in ids:
             await db.execute(
                 student_interests.insert().values(
                     student_id=current_user.id,

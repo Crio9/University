@@ -28,6 +28,10 @@ class CategoryCode(str, enum.Enum):
 
 
 class TagCode(str, enum.Enum):
+    BACKEND = "BACKEND"
+    FRONTEND = "FRONTEND"
+    AI_DATA = "AI_DATA"
+    SECURITY = "SECURITY"
     CAREER = "CAREER"
     INTERNSHIP = "INTERNSHIP"
     JOB = "JOB"
@@ -64,6 +68,10 @@ CANONICAL_CATEGORIES: tuple[DictionaryEntry, ...] = (
 )
 
 CANONICAL_TAGS: tuple[DictionaryEntry, ...] = (
+    DictionaryEntry("BACKEND", "Backend"),
+    DictionaryEntry("FRONTEND", "Frontend"),
+    DictionaryEntry("AI_DATA", "AI/Data"),
+    DictionaryEntry("SECURITY", "Информационная безопасность"),
     DictionaryEntry("CAREER", "Карьера"),
     DictionaryEntry("INTERNSHIP", "Стажировки"),
     DictionaryEntry("JOB", "Вакансии"),
