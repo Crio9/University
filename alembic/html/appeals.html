@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Обращения — MyUni</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fb;
+            color: #24324a;
+        }
+
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Левое меню */
+
+        .sidebar {
+            width: 235px;
+            background: white;
+            border-right: 1px solid #e9edf3;
+            padding: 28px 18px;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+        }
+
+        .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 35px;
+}
+
+.logo img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.logo-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.logo-name {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2878e8;
+}
+
+.logo-description {
+    font-size: 9px;
+    line-height: 1.35;
+    color: #8993a5;
+}
+
+        .menu-title {
+            color: #a0aaba;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 0 12px;
+            margin-bottom: 13px;
+        }
+
+        .menu {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 13px 12px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: #69778d;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+
+        .menu a:hover,
+        .menu a.active {
+            background: #edf4ff;
+            color: #2878e5;
+        }
+
+        .menu-icon {
+            width: 21px;
+            text-align: center;
+            font-size: 17px;
+        }
+
+        .sidebar-bottom {
+            position: absolute;
+            bottom: 25px;
+            left: 18px;
+            right: 18px;
+        }
+
+        /* Основная область */
+
+        .main {
+            width: calc(100% - 235px);
+            margin-left: 235px;
+            padding: 32px 40px;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 26px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #8491a5;
+            font-size: 14px;
+        }
+
+        /* Общие карточки */
+
+        .section-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 3px 15px rgba(30, 65, 110, 0.04);
+        }
+
+        .section-card h2 {
+            font-size: 19px;
+            margin-bottom: 8px;
+        }
+
+        .section-description {
+            font-size: 13px;
+            color: #8491a5;
+            margin-bottom: 23px;
+            line-height: 1.5;
+        }
+
+        /* Форма */
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 9px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 13px 14px;
+            border: 1px solid #e1e7f0;
+            border-radius: 9px;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+            outline: none;
+            background: white;
+            color: #24324a;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: #2878e5;
+        }
+
+        .form-group textarea {
+            min-height: 125px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        .submit-button {
+            padding: 14px 22px;
+            background: #2878e5;
+            color: white;
+            border: none;
+            border-radius: 9px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .submit-button:hover {
+            background: #1765ca;
+        }
+
+        .message {
+            display: none;
+            margin-bottom: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .message.error {
+            display: block;
+            color: #b42318;
+            background: #fff0ee;
+        }
+
+        /* История обращений */
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .history-count {
+            background: #edf4ff;
+            color: #2878e5;
+            padding: 9px 13px;
+            border-radius: 9px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .appeal-item {
+            border: 1px solid #e8edf4;
+            border-radius: 11px;
+            padding: 18px;
+            margin-bottom: 13px;
+        }
+
+        .appeal-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 12px;
+        }
+
+        .appeal-title {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 7px;
+        }
+
+        .appeal-category {
+            font-size: 11px;
+            color: #8491a5;
+        }
+
+        .appeal-description {
+            font-size: 13px;
+            line-height: 1.6;
+            color: #69778d;
+            margin-bottom: 13px;
+            overflow-wrap: anywhere;
+        }
+
+        .appeal-date {
+            font-size: 11px;
+            color: #a0aaba;
+        }
+
+        .status {
+            display: inline-block;
+            white-space: nowrap;
+            padding: 7px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .status.pending {
+            background: #fff5df;
+            color: #b7791f;
+        }
+
+        .status.progress {
+            background: #edf4ff;
+            color: #2878e5;
+        }
+
+        .status.completed {
+            background: #e8f8ef;
+            color: #24834c;
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 35px 15px;
+            color: #8491a5;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 190px;
+            }
+
+            .main {
+                width: calc(100% - 190px);
+                margin-left: 190px;
+                padding: 25px;
+            }
+        }
+
+        @media (max-width: 650px) {
+            .sidebar {
+                position: static;
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #e9edf3;
+                padding: 15px;
+            }
+
+            .layout {
+                display: block;
+            }
+
+            .logo {
+                margin-bottom: 15px;
+            }
+
+            .menu-title,
+            .sidebar-bottom {
+                display: none;
+            }
+
+            .menu {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .menu a {
+                padding: 9px;
+                font-size: 12px;
+            }
+
+            .main {
+                width: 100%;
+                margin-left: 0;
+                padding: 22px 15px;
+            }
+
+            .section-card {
+                padding: 20px 16px;
+            }
+
+            .appeal-top {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="layout">
+
+    <!-- Левое меню -->
+
+    <aside class="sidebar">
+
+        <div class="logo">
+    <img src="dgtu-logo.png" alt="Логотип ДГТУ">
+
+    <div class="logo-text">
+        <span class="logo-name">MyUni.</span>
+        <span class="logo-description">
+            Донской государственный<br>
+            технический университет
+        </span>
+    </div>
+</div>
+
+        <p class="menu-title">Основное меню</p>
+
+        <nav class="menu">
+
+            <a href="home.html">
+                <span class="menu-icon">⌂</span>
+                Главная
+            </a>
+
+            <a href="schedule.html">
+                <span class="menu-icon">▦</span>
+                Расписание
+            </a>
+
+            <a href="saved.html">
+                <span class="menu-icon">♡</span>
+                Сохранённое
+            </a>
+
+            <a href="appeals.html" class="active">
+                <span class="menu-icon">✉</span>
+                Обращения
+            </a>
+
+            <a href="settings.html">
+                <span class="menu-icon">⚙</span>
+                Настройки
+            </a>
+
+        </nav>
+
+        <div class="sidebar-bottom">
+            <nav class="menu">
+                <a href="login.html">
+                    <span class="menu-icon">↪</span>
+                    Выйти
+                </a>
+            </nav>
+        </div>
+
+    </aside>
+
+
+    <!-- Основная область -->
+
+    <main class="main">
+
+        <header class="header">
+            <h1>Обращения</h1>
+            <p>
+                Задавайте вопросы, отправляйте предложения
+                и следите за ответами университета.
+            </p>
+        </header>
+
+
+        <!-- Форма нового обращения -->
+
+        <section class="section-card">
+
+            <h2>Новое обращение</h2>
+
+            <p class="section-description">
+                Заполните форму, чтобы отправить обращение
+                в университет.
+            </p>
+
+            <form id="appealForm">
+
+                <div class="form-group">
+
+                    <label for="appealTitle">
+                        Тема обращения
+                    </label>
+
+                    <input
+                        type="text"
+                        id="appealTitle"
+                        placeholder="Кратко опишите вопрос"
+                        maxlength="120"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="appealCategory">
+                        Категория обращения
+                    </label>
+
+                    <select id="appealCategory" required>
+
+                        <option value="">Выберите категорию</option>
+
+                        <option value="Учебный процесс">
+                            Учебный процесс
+                        </option>
+
+                        <option value="Расписание">
+                            Расписание
+                        </option>
+
+                        <option value="Общежитие">
+                            Общежитие
+                        </option>
+
+                        <option value="Студенческая жизнь">
+                            Студенческая жизнь
+                        </option>
+
+                        <option value="Предложение">
+                            Предложение
+                        </option>
+
+                        <option value="Другое">
+                            Другое
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="appealDescription">
+                        Текст обращения
+                    </label>
+
+                    <textarea
+                        id="appealDescription"
+                        placeholder="Подробно опишите вашу проблему или предложение..."
+                        maxlength="2000"
+                        required
+                    ></textarea>
+
+                </div>
+
+
+                <div id="message" class="message"></div>
+
+                <button type="submit" class="submit-button">
+                    Отправить обращение
+                </button>
+
+            </form>
+
+        </section>
+
+
+        <!-- История обращений -->
+
+        <section class="section-card">
+
+            <div class="history-header">
+
+                <h2>История обращений</h2>
+
+                <div class="history-count" id="appealCount">
+                    0 обращений
+                </div>
+
+            </div>
+
+            <div id="appealList"></div>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<script>
+
+    // Получаем сохранённые обращения из браузера
+
+    let appeals = JSON.parse(
+        localStorage.getItem("myUniAppeals") || "[]"
+    );
+
+
+    // Находим элементы страницы
+
+    const appealForm = document.getElementById("appealForm");
+    const appealList = document.getElementById("appealList");
+    const appealCount = document.getElementById("appealCount");
+    const message = document.getElementById("message");
+
+
+    // Определяем стиль статуса
+
+    function getStatusClass(status) {
+
+        if (status === "В работе") {
+            return "progress";
+        }
+
+        if (status === "Решено") {
+            return "completed";
+        }
+
+        return "pending";
+
+    }
+
+
+    // Показываем историю обращений
+
+    function renderAppeals() {
+
+        appealList.innerHTML = "";
+
+        appealCount.textContent =
+            appeals.length + " обращений";
+
+
+        // Если обращений пока нет
+
+        if (appeals.length === 0) {
+
+            appealList.innerHTML = `
+                <div class="empty-message">
+                    У вас пока нет обращений.<br>
+                    Создайте первое обращение с помощью формы выше.
+                </div>
+            `;
+
+            return;
+
+        }
+
+
+        // Перебираем все обращения
+
+        appeals.forEach(function(appeal) {
+
+            const item = document.createElement("article");
+
+            item.className = "appeal-item";
+
+            item.innerHTML = `
+
+                <div class="appeal-top">
+
+                    <div>
+
+                        <div class="appeal-title">
+                            ${appeal.title}
+                        </div>
+
+                        <div class="appeal-category">
+                            ${appeal.category}
+                        </div>
+
+                    </div>
+
+                    <span class="status ${getStatusClass(appeal.status)}">
+                        ${appeal.status}
+                    </span>
+
+                </div>
+
+                <p class="appeal-description">
+                    ${appeal.description}
+                </p>
+
+                <div class="appeal-date">
+                    Отправлено: ${appeal.date}
+                </div>
+
+            `;
+
+            appealList.appendChild(item);
+
+        });
+
+    }
+
+
+    // Создание нового обращения
+
+    appealForm.addEventListener("submit", function(event) {
+
+        event.preventDefault();
+
+
+        const title = document.getElementById("appealTitle").value.trim();
+
+        const category = document.getElementById("appealCategory").value;
+
+        const description = document.getElementById("appealDescription").value.trim();
+
+
+        // Проверяем заполнение формы
+
+        if (!title || !category || !description) {
+
+            message.textContent =
+                "Пожалуйста, заполните все поля.";
+
+            message.className = "message error";
+
+            return;
+
+        }
+
+
+        // Создаём новое обращение
+
+        const newAppeal = {
+
+            id: Date.now(),
+
+            title: title,
+
+            category: category,
+
+            description: description,
+
+            date: new Date().toLocaleString("ru-RU"),
+
+            status: "На рассмотрении"
+
+        };
+
+
+        // Добавляем обращение в начало списка
+
+        appeals.unshift(newAppeal);
+
+
+        // Сохраняем список в браузере
+
+        localStorage.setItem(
+            "myUniAppeals",
+            JSON.stringify(appeals)
+        );
+
+
+        // Очищаем форму
+
+        appealForm.reset();
+
+        message.style.display = "none";
+
+
+        // Обновляем историю
+
+        renderAppeals();
+
+    });
+
+
+    // Загружаем обращения при открытии страницы
+
+    renderAppeals();
+
+</script>
+
+</body>
+</html>

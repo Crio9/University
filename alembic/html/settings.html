@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Настройки | MyUni</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f5f7fb;
+            color: #263247;
+        }
+
+        .sidebar {
+            width: 245px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: white;
+            padding: 30px 20px;
+            border-right: 1px solid #e8edf4;
+        }
+
+        .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 35px;
+}
+
+.logo img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.logo-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.logo-name {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2878e8;
+}
+
+.logo-description {
+    font-size: 9px;
+    line-height: 1.35;
+    color: #8993a5;
+}
+
+        .menu a {
+            display: block;
+            padding: 14px 16px;
+            margin-bottom: 9px;
+            text-decoration: none;
+            color: #657187;
+            border-radius: 12px;
+            transition: 0.2s;
+        }
+
+        .menu a:hover,
+        .menu a.active {
+            background: #edf4ff;
+            color: #2878e8;
+        }
+
+        .main {
+            margin-left: 245px;
+            padding: 40px;
+            max-width: 1250px;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 29px;
+            margin-bottom: 9px;
+        }
+
+        .header p {
+            color: #8993a5;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 26px;
+            border: 1px solid #edf0f5;
+        }
+
+        .card h2 {
+            font-size: 19px;
+            margin-bottom: 8px;
+        }
+
+        .card-description {
+            color: #929bad;
+            font-size: 13px;
+            margin-bottom: 24px;
+        }
+
+        .field {
+            margin-bottom: 17px;
+        }
+
+        .field label {
+            display: block;
+            font-size: 13px;
+            color: #788398;
+            margin-bottom: 8px;
+        }
+
+        .field input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #e2e7ef;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            background: #fbfcfe;
+        }
+
+        .field input:focus {
+            border-color: #4389ec;
+            background: white;
+        }
+
+        .button {
+            border: none;
+            padding: 12px 19px;
+            border-radius: 10px;
+            background: #2878e8;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+
+        .button:hover {
+            background: #1766d2;
+        }
+
+        .interest-group {
+            margin-bottom: 22px;
+        }
+
+        .interest-group h3 {
+            font-size: 14px;
+            margin-bottom: 13px;
+        }
+
+        .options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 9px;
+        }
+
+        .option {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 10px 12px;
+            border: 1px solid #e5eaf1;
+            border-radius: 10px;
+            color: #647187;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .option:has(input:checked) {
+            background: #edf4ff;
+            border-color: #8bb8f5;
+            color: #2878e8;
+        }
+
+        .option input {
+            accent-color: #2878e8;
+        }
+
+        .notice {
+            color: #8b96a8;
+            font-size: 12px;
+            margin-top: 13px;
+        }
+
+        .notification-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #edf0f5;
+            gap: 15px;
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        .notification-item p {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .notification-item small {
+            color: #929bad;
+        }
+
+        .notification-item input {
+            width: 18px;
+            height: 18px;
+            accent-color: #2878e8;
+            cursor: pointer;
+        }
+
+        .logout-card {
+            margin-top: 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logout-card p {
+            color: #929bad;
+            font-size: 13px;
+            margin-top: 7px;
+        }
+
+        .logout-button {
+            background: #fff0f0;
+            color: #dc5555;
+        }
+
+        .logout-button:hover {
+            background: #ffe0e0;
+        }
+
+        .message {
+            margin-top: 13px;
+            color: #218653;
+            font-size: 13px;
+            display: none;
+        }
+
+        @media (max-width: 850px) {
+            .sidebar {
+                width: 190px;
+            }
+
+            .main {
+                margin-left: 190px;
+                padding: 25px;
+            }
+
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .sidebar {
+                position: static;
+                width: 100%;
+                height: auto;
+                padding: 18px;
+            }
+
+            .logo {
+                margin-bottom: 15px;
+            }
+
+            .menu {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 5px;
+            }
+
+            .menu a {
+                padding: 9px;
+                margin: 0;
+                font-size: 13px;
+            }
+
+            .main {
+                margin-left: 0;
+                padding: 20px;
+            }
+
+            .logout-card {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <aside class="sidebar">
+        <div class="logo">
+    <img src="dgtu-logo.png" alt="Логотип ДГТУ">
+
+    <div class="logo-text">
+        <span class="logo-name">MyUni.</span>
+        <span class="logo-description">
+            Донской государственный<br>
+            технический университет
+        </span>
+    </div>
+</div>
+
+        <nav class="menu">
+            <a href="home.html">⌂ Главная</a>
+            <a href="schedule.html">▦ Расписание</a>
+            <a href="saved.html">♡ Сохранённое</a>
+            <a href="appeals.html">✉ Обращения</a>
+            <a href="settings.html" class="active">⚙ Настройки</a>
+            <a href="login.html">↪ Выйти</a>
+        </nav>
+    </aside>
+
+    <main class="main">
+
+        <header class="header">
+            <h1>Настройки</h1>
+            <p>Управляйте своим профилем и персональными предпочтениями</p>
+        </header>
+
+        <div class="settings-grid">
+
+            <!-- Профиль -->
+            <section class="card">
+                <h2>Мой профиль</h2>
+                <p class="card-description">
+                    Основная информация о студенте
+                </p>
+
+                <form id="profileForm">
+
+                    <div class="field">
+                        <label for="fullName">ФИО</label>
+                        <input type="text" id="fullName"
+                               placeholder="Введите ФИО" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="email">Электронная почта</label>
+                        <input type="email" id="email"
+                               placeholder="Введите почту" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="faculty">Факультет / институт</label>
+                        <input type="text" id="faculty"
+                               placeholder="Например, ИОТ">
+                    </div>
+
+                    <div class="field">
+                        <label for="program">Направление подготовки</label>
+                        <input type="text" id="program"
+                               placeholder="Ваше направление">
+                    </div>
+
+                    <div class="field">
+                        <label for="course">Курс</label>
+                        <input type="number" id="course"
+                               min="1" max="6" placeholder="Например, 2">
+                    </div>
+
+                    <div class="field">
+                        <label for="group">Группа</label>
+                        <input type="text" id="group"
+                               placeholder="Номер группы">
+                    </div>
+
+                    <button type="submit" class="button">
+                        Сохранить профиль
+                    </button>
+
+                    <p class="message" id="profileMessage">
+                        Данные профиля сохранены!
+                    </p>
+
+                </form>
+            </section>
+
+            <!-- Интересы -->
+            <section class="card">
+                <h2>Мои интересы</h2>
+                <p class="card-description">
+                    Выберите, какие публикации хотите видеть в своей ленте
+                </p>
+
+                <form id="interestsForm">
+
+                    <div class="interest-group">
+                        <h3>Темы публикаций</h3>
+
+                        <div class="options">
+                            <label class="option">
+                                <input type="checkbox" name="topic" value="sport">
+                                Спорт
+                            </label>
+
+                            <label class="option">
+                                <input type="checkbox" name="topic" value="science">
+                                Наука
+                            </label>
+
+                            <label class="option">
+                                <input type="checkbox" name="topic" value="social">
+                                Студенческая жизнь
+                            </label>
+
+                            <label class="option">
+                                <input type="checkbox" name="topic" value="culture">
+                                Культура
+                            </label>
+
+                            <label class="option">
+                                <input type="checkbox" name="topic" value="student">
+                                Самоуправление
+                            </label>
+
+                            <label class="option">
+                                <input type="checkbox" name="topic" value="career">
+                                Карьера
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="interest-group">
+                        <h3>Масштаб публикаций</h3>
+
+                        <div class="options">
+                            <label class="option">
+                                <input type="checkbox" name="scope" value="group">
+                                Моя группа
+                            </label>
+
+                            <label class="option">
+                                <input type="checkbox" name="scope" value="faculty">
+                                Мой факультет
+                            </label>
+
+                            <label class="option">
+                                <input type="checkbox" name="scope" value="other_faculties">
+                                Другие факультеты
+                            </label>
+
+                            <label class="option">
+                                <input type="checkbox" name="scope" value="university">
+                                Весь университет
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="button">
+                        Сохранить интересы
+                    </button>
+
+                    <p class="message" id="interestsMessage">
+                        Интересы успешно обновлены!
+                    </p>
+
+                    <p class="notice">
+                        Изменения повлияют на вкладку «Мои интересы» в главной ленте.
+                    </p>
+
+                </form>
+            </section>
+
+            <!-- Уведомления -->
+            <section class="card">
+                <h2>Уведомления</h2>
+                <p class="card-description">
+                    Настройте отображение уведомлений
+                </p>
+
+                <div class="notification-item">
+                    <div>
+                        <p>Новости университета</p>
+                        <small>Новые публикации и объявления</small>
+                    </div>
+                    <input type="checkbox" id="newsNotifications" checked>
+                </div>
+
+                <div class="notification-item">
+                    <div>
+                        <p>Студенческие мероприятия</p>
+                        <small>События и встречи</small>
+                    </div>
+                    <input type="checkbox" id="eventNotifications" checked>
+                </div>
+
+                <div class="notification-item">
+                    <div>
+                        <p>Обновления обращений</p>
+                        <small>Изменения статуса ваших обращений</small>
+                    </div>
+                    <input type="checkbox" id="appealNotifications" checked>
+                </div>
+
+                <p class="notice">
+                    Пока это демонстрационные настройки интерфейса.
+                </p>
+            </section>
+
+            <!-- Информация -->
+            <section class="card">
+                <h2>О приложении</h2>
+                <p class="card-description">
+                    Информация о платформе
+                </p>
+
+                <div class="notification-item">
+                    <div>
+                        <p>Название проекта</p>
+                        <small>MyUni — университетская платформа</small>
+                    </div>
+                </div>
+
+                <div class="notification-item">
+                    <div>
+                        <p>Версия</p>
+                        <small>1.0.0</small>
+                    </div>
+                </div>
+
+                <div class="notification-item">
+                    <div>
+                        <p>Назначение</p>
+                        <small>Единое пространство для студентов</small>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <section class="card logout-card">
+            <div>
+                <h2>Выход из аккаунта</h2>
+                <p>Вернуться на страницу авторизации MyUni</p>
+            </div>
+
+            <button class="button logout-button" id="logoutButton">
+                Выйти из аккаунта
+            </button>
+        </section>
+
+    </main>
+
+    <script>
+        // Загружаем сохранённый профиль
+        function loadProfile() {
+            const profile = JSON.parse(
+                localStorage.getItem("myUniProfile")
+            ) || {};
+
+            document.getElementById("fullName").value = profile.fullName || "";
+            document.getElementById("email").value = profile.email || "";
+            document.getElementById("faculty").value = profile.faculty || "";
+            document.getElementById("program").value = profile.program || "";
+            document.getElementById("course").value = profile.course || "";
+            document.getElementById("group").value = profile.group || "";
+        }
+
+        // Сохраняем профиль
+        document.getElementById("profileForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            const profile = {
+                fullName: document.getElementById("fullName").value.trim(),
+                email: document.getElementById("email").value.trim(),
+                faculty: document.getElementById("faculty").value.trim(),
+                program: document.getElementById("program").value.trim(),
+                course: document.getElementById("course").value,
+                group: document.getElementById("group").value.trim()
+            };
+
+            localStorage.setItem("myUniProfile", JSON.stringify(profile));
+
+            const message = document.getElementById("profileMessage");
+            message.style.display = "block";
+        });
+
+        // Загружаем сохранённые интересы
+        function loadInterests() {
+            const preferences = JSON.parse(
+                localStorage.getItem("myUniPreferences")
+            ) || { topics: [], scopes: [] };
+
+            document.querySelectorAll('input[name="topic"]').forEach(function(input) {
+                input.checked = preferences.topics.includes(input.value);
+            });
+
+            document.querySelectorAll('input[name="scope"]').forEach(function(input) {
+                input.checked = preferences.scopes.includes(input.value);
+            });
+        }
+
+        // Сохраняем новые интересы
+        document.getElementById("interestsForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            const topics = [];
+            const scopes = [];
+
+            document.querySelectorAll('input[name="topic"]:checked').forEach(function(input) {
+                topics.push(input.value);
+            });
+
+            document.querySelectorAll('input[name="scope"]:checked').forEach(function(input) {
+                scopes.push(input.value);
+            });
+
+            if (topics.length === 0 || scopes.length === 0) {
+                alert("Выберите хотя бы одну тему и один масштаб публикаций.");
+                return;
+            }
+
+            const preferences = {
+                topics: topics,
+                scopes: scopes
+            };
+
+            localStorage.setItem("myUniPreferences", JSON.stringify(preferences));
+
+            document.getElementById("interestsMessage").style.display = "block";
+        });
+
+        // Загружаем настройки при открытии страницы
+        loadProfile();
+        loadInterests();
+
+        // Переход на страницу входа
+        document.getElementById("logoutButton").addEventListener("click", function() {
+            window.location.href = "login.html";
+        });
+    </script>
+
+</body>
+</html>

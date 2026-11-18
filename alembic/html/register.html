@@ -1,0 +1,431 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация — MyUni</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f6fb;
+            color: #24324a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px 16px;
+        }
+
+        .register-container {
+            width: 100%;
+            max-width: 560px;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(30, 65, 110, 0.08);
+        }
+
+        .logo {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    font-weight: bold;
+}
+
+.logo img {
+    width: 55px;
+    height: 55px;
+    object-fit: contain;
+    background: white;
+    border-radius: 50%;
+    padding: 4px;
+}
+
+.logo-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.logo-name {
+    font-size: 27px;
+}
+
+.logo-description {
+    font-size: 10px;
+    line-height: 1.4;
+    font-weight: normal;
+}
+
+        h1 {
+            font-size: 26px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #8491a5;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 13px 14px;
+            border: 1px solid #dce3ed;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            background: white;
+            color: #24324a;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus {
+            border-color: #2878e5;
+        }
+
+        input::placeholder {
+            color: #a5afbd;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .register-button {
+            width: 100%;
+            padding: 15px;
+            margin-top: 10px;
+            background: #2878e5;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .register-button:hover {
+            background: #1765ca;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 22px;
+            font-size: 14px;
+            color: #8491a5;
+        }
+
+        .login-link a {
+            color: #2878e5;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .message {
+            display: none;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .message.error {
+            display: block;
+            color: #b42318;
+            background: #fff0ee;
+        }
+
+        @media (max-width: 500px) {
+            .register-container {
+                padding: 26px 20px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="register-container">
+
+        <div class="logo">
+    <img src="dgtu-logo.png" alt="Логотип ДГТУ">
+
+    <div class="logo-text">
+        <span class="logo-name">MyUni.</span>
+        <span class="logo-description">
+            Донской государственный<br>
+            технический университет
+        </span>
+    </div>
+</div>
+
+        <h1>Создать аккаунт</h1>
+
+        <p class="subtitle">
+            Присоединяйтесь к университетскому сообществу.
+            Создайте аккаунт, чтобы получать персональные новости
+            и следить за жизнью университета.
+        </p>
+
+        <form id="registerForm">
+
+            <div class="form-group">
+                <label for="fullName">ФИО</label>
+                <input
+                    type="text"
+                    id="fullName"
+                    placeholder="Иванов Иван Иванович"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="email">Электронная почта</label>
+                <input
+                    type="email"
+                    id="email"
+                    placeholder="example@mail.ru"
+                    required
+                >
+            </div>
+
+            <div class="form-row">
+
+                <div class="form-group">
+                    <label for="password">Пароль</label>
+                    <input
+                        type="password"
+                        id="password"
+                        placeholder="Минимум 8 символов"
+                        minlength="8"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Повторите пароль</label>
+                    <input
+                        type="password"
+                        id="confirmPassword"
+                        placeholder="Повторите пароль"
+                        required
+                    >
+                </div>
+
+            </div>
+
+            <div class="form-group">
+                <label for="faculty">Факультет / институт</label>
+                <input
+                    type="text"
+                    id="faculty"
+                    placeholder="Название факультета или института"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="program">Направление подготовки</label>
+                <input
+                    type="text"
+                    id="program"
+                    placeholder="Например, Программная инженерия"
+                    required
+                >
+            </div>
+
+            <div class="form-row">
+
+                <div class="form-group">
+                    <label for="course">Курс</label>
+                    <select id="course" required>
+                        <option value="">Выберите курс</option>
+                        <option value="1">1 курс</option>
+                        <option value="2">2 курс</option>
+                        <option value="3">3 курс</option>
+                        <option value="4">4 курс</option>
+                        <option value="5">5 курс</option>
+                        <option value="6">6 курс</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="group">Группа</label>
+                    <input
+                        type="text"
+                        id="group"
+                        placeholder="Например, ИТ-21"
+                        required
+                    >
+                </div>
+
+            </div>
+
+            <div id="message" class="message"></div>
+
+            <button type="submit" class="register-button">
+                Создать аккаунт
+            </button>
+
+        </form>
+
+        <div class="login-link">
+            Уже есть аккаунт?
+            <a href="login.html">Войти</a>
+        </div>
+
+    </main>
+
+    
+<script>
+    const API_URL = "http://127.0.0.1:8000/api/v1";
+
+    const registerForm = document.getElementById("registerForm");
+    const message = document.getElementById("message");
+    const registerButton = registerForm.querySelector(
+        'button[type="submit"]'
+    );
+
+    registerForm.addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const fullName = document.getElementById("fullName").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+        const confirmPassword = document.getElementById("confirmPassword").value;
+
+        if (password !== confirmPassword) {
+            message.textContent = "Пароли не совпадают.";
+            message.className = "message error";
+            return;
+        }
+
+        registerButton.disabled = true;
+        registerButton.textContent = "Создаём аккаунт...";
+
+        message.textContent = "";
+        message.className = "message";
+
+        try {
+            // 1. Создаём аккаунт
+            const registerResponse = await fetch(
+                `${API_URL}/auth/register`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        full_name: fullName,
+                        email: email,
+                        password: password,
+                        role: "student"
+                    })
+                }
+            );
+
+            const registerData = await registerResponse.json();
+
+            if (!registerResponse.ok) {
+                throw new Error(
+                    typeof registerData.detail === "string"
+                        ? registerData.detail
+                        : JSON.stringify(registerData.detail || "Ошибка регистрации")
+                );
+            }
+
+            // 2. Автоматически выполняем вход
+            const loginResponse = await fetch(
+                `${API_URL}/auth/login`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                }
+            );
+
+            const loginData = await loginResponse.json();
+
+            if (!loginResponse.ok) {
+                throw new Error(
+                    loginData.detail || "Не удалось выполнить вход"
+                );
+            }
+
+            // 3. Получаем и сохраняем токен
+            const token =
+                loginData.access_token ||
+                loginData.result?.access_token;
+
+            if (!token) {
+                throw new Error("Сервер не вернул токен авторизации");
+            }
+
+            localStorage.setItem("myUniToken", token);
+
+            localStorage.setItem(
+                "myUniUser",
+                JSON.stringify({
+                    fullName: fullName,
+                    email: email
+                })
+            );
+
+            // 4. Переходим к выбору интересов
+            message.textContent = "Аккаунт создан! Перенаправляем...";
+            message.className = "message success";
+
+            window.location.href = "interests.html";
+
+        } catch (error) {
+            message.textContent = error.message;
+            message.className = "message error";
+
+            registerButton.disabled = false;
+            registerButton.textContent = "Создать аккаунт";
+        }
+    });
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,337 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мои интересы — MyUni</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f6fb;
+            color: #24324a;
+            min-height: 100vh;
+            padding: 40px 16px;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 35px;
+}
+
+.logo img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.logo-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.logo-name {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2878e8;
+}
+
+.logo-description {
+    font-size: 9px;
+    line-height: 1.35;
+    color: #8993a5;
+}
+
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(30, 65, 110, 0.06);
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 12px;
+        }
+
+        .subtitle {
+            color: #8491a5;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 35px;
+        }
+
+        .section-title {
+            font-size: 19px;
+            margin-bottom: 8px;
+        }
+
+        .section-description {
+            color: #8491a5;
+            font-size: 13px;
+            margin-bottom: 18px;
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 13px;
+            margin-bottom: 35px;
+        }
+
+        .option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 17px;
+            border: 1px solid #e1e8f1;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .option:hover {
+            border-color: #2878e5;
+            background: #f7faff;
+        }
+
+        .option:has(input:checked) {
+            border-color: #2878e5;
+            background: #eef5ff;
+        }
+
+        .option input {
+            width: 17px;
+            height: 17px;
+            accent-color: #2878e5;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .option span {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .save-button {
+            width: 100%;
+            padding: 16px;
+            background: #2878e5;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .save-button:hover {
+            background: #1765ca;
+        }
+
+        .message {
+            display: none;
+            color: #b42318;
+            background: #fff0ee;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .footer {
+            text-align: center;
+            color: #a0aaba;
+            font-size: 12px;
+            margin-top: 22px;
+        }
+
+        @media (max-width: 600px) {
+            .content {
+                padding: 25px 20px;
+            }
+
+            .options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="container">
+
+        <div class="logo">
+    <img src="dgtu-logo.png" alt="Логотип ДГТУ">
+
+    <div class="logo-text">
+        <span class="logo-name">MyUni.</span>
+        <span class="logo-description">
+            Донской государственный<br>
+            технический университет
+        </span>
+    </div>
+</div>
+
+        <section class="content">
+
+            <h1>Расскажите о своих интересах</h1>
+
+            <p class="subtitle">
+                Выберите направления, которые вам интересны.
+                MyUni будет использовать ваши предпочтения,
+                чтобы формировать персональную ленту новостей
+                и мероприятий.
+            </p>
+
+            <form id="interestsForm">
+
+                <h2 class="section-title">Что вам интересно?</h2>
+
+                <p class="section-description">
+                    Можно выбрать несколько направлений.
+                </p>
+
+                <div class="options">
+
+                    <label class="option">
+                        <input type="checkbox" name="topics" value="sport">
+                        <span>Спорт</span>
+                    </label>
+
+                    <label class="option">
+                        <input type="checkbox" name="topics" value="science">
+                        <span>Наука и образование</span>
+                    </label>
+
+                    <label class="option">
+                        <input type="checkbox" name="topics" value="social">
+                        <span>Общественная деятельность</span>
+                    </label>
+
+                    <label class="option">
+                        <input type="checkbox" name="topics" value="culture">
+                        <span>Культура и творчество</span>
+                    </label>
+
+                    <label class="option">
+                        <input type="checkbox" name="topics" value="student">
+                        <span>Студенческое самоуправление</span>
+                    </label>
+
+                    <label class="option">
+                        <input type="checkbox" name="topics" value="career">
+                        <span>Карьера и трудоустройство</span>
+                    </label>
+
+                </div>
+
+                <h2 class="section-title">
+                    Какие мероприятия вам показывать?
+                </h2>
+
+                <p class="section-description">
+                    Выберите интересующий вас масштаб мероприятий.
+                </p>
+
+                <div class="options">
+
+                    <label class="option">
+                        <input type="checkbox" name="scope" value="group">
+                        <span>Моя учебная группа</span>
+                    </label>
+
+                    <label class="option">
+                        <input type="checkbox" name="scope" value="faculty">
+                        <span>Мой факультет</span>
+                    </label>
+
+                    <label class="option">
+                        <input type="checkbox" name="scope" value="other_faculties">
+                        <span>Другие факультеты</span>
+                    </label>
+
+                    <label class="option">
+                        <input type="checkbox" name="scope" value="university">
+                        <span>Университет</span>
+                    </label>
+
+                </div>
+
+                <div id="message" class="message"></div>
+
+                <button type="submit" class="save-button">
+                    Сохранить интересы
+                </button>
+
+            </form>
+
+        </section>
+
+        <div class="footer">
+            MyUni — университетская жизнь в одном месте
+        </div>
+
+    </main>
+
+    <script>
+        const interestsForm = document.getElementById("interestsForm");
+
+        interestsForm.addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            const topics = document.querySelectorAll(
+                'input[name="topics"]:checked'
+            );
+
+            const scopes = document.querySelectorAll(
+                'input[name="scope"]:checked'
+            );
+
+            const message = document.getElementById("message");
+
+            if (topics.length === 0 || scopes.length === 0) {
+                message.textContent =
+                    "Выберите хотя бы одну тему и один масштаб мероприятий.";
+
+                message.style.display = "block";
+                return;
+            }
+
+            const selectedTopics = Array.from(topics).map(item => item.value);
+            const selectedScopes = Array.from(scopes).map(item => item.value);
+
+            const preferences = {
+                topics: selectedTopics,
+                scopes: selectedScopes
+            };
+
+            localStorage.setItem(
+                "myUniPreferences",
+                JSON.stringify(preferences)
+            );
+
+            window.location.href = "home.html";
+        });
+    </script>
+
+</body>
+</html>

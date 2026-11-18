@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Расписание | MyUni</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f5f7fb;
+            color: #25324b;
+        }
+
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Боковое меню */
+        .sidebar {
+            width: 245px;
+            background: white;
+            padding: 28px 20px;
+            border-right: 1px solid #e9edf5;
+            position: fixed;
+            height: 100vh;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 40px;
+            font-size: 21px;
+            font-weight: bold;
+            color: #2463eb;
+        }
+
+        .logo img {
+            width: 43px;
+            height: 43px;
+            object-fit: contain;
+        }
+
+        .menu-title {
+            color: #a0a9ba;
+            font-size: 11px;
+            font-weight: bold;
+            margin: 25px 0 12px 12px;
+            letter-spacing: 1px;
+        }
+
+        .menu a {
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            padding: 13px 14px;
+            margin-bottom: 7px;
+            text-decoration: none;
+            color: #68758c;
+            border-radius: 11px;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+
+        .menu a:hover,
+        .menu a.active {
+            background: #edf3ff;
+            color: #2463eb;
+        }
+
+        .menu a.active {
+            font-weight: bold;
+        }
+
+        /* Основная часть */
+        .main {
+            margin-left: 245px;
+            width: calc(100% - 245px);
+            padding: 35px 45px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 35px;
+        }
+
+        .topbar h1 {
+            font-size: 28px;
+            color: #25324b;
+        }
+
+        .user {
+            background: white;
+            padding: 11px 17px;
+            border-radius: 12px;
+            color: #52617a;
+            font-size: 14px;
+        }
+
+        .welcome {
+            margin-bottom: 28px;
+        }
+
+        .welcome h2 {
+            font-size: 23px;
+            margin-bottom: 8px;
+        }
+
+        .welcome p {
+            color: #8994a8;
+            font-size: 14px;
+        }
+
+        /* Переключатель дней */
+        .schedule-panel {
+            background: white;
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 5px 25px rgba(30, 55, 90, 0.04);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .panel-header h3 {
+            font-size: 18px;
+        }
+
+        .today-btn {
+            border: none;
+            background: #edf3ff;
+            color: #2463eb;
+            padding: 10px 17px;
+            border-radius: 9px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .today-btn:hover {
+            background: #dce8ff;
+        }
+
+        .week {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .day {
+            background: #f7f9fd;
+            border: 1px solid #edf0f6;
+            padding: 15px 8px;
+            border-radius: 13px;
+            cursor: pointer;
+            text-align: center;
+            transition: 0.2s;
+        }
+
+        .day:hover {
+            border-color: #8eafff;
+        }
+
+        .day.active {
+            background: #2463eb;
+            color: white;
+            border-color: #2463eb;
+        }
+
+        .day-name {
+            font-size: 12px;
+            margin-bottom: 7px;
+            opacity: 0.8;
+        }
+
+        .day-date {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        /* Список занятий */
+        .day-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .day-heading h3 {
+            font-size: 18px;
+        }
+
+        .lesson-count {
+            color: #8994a8;
+            font-size: 13px;
+        }
+
+        .lesson {
+            display: grid;
+            grid-template-columns: 95px 1fr auto;
+            gap: 20px;
+            align-items: center;
+            padding: 19px;
+            border: 1px solid #edf0f6;
+            border-radius: 14px;
+            margin-bottom: 13px;
+            transition: 0.2s;
+        }
+
+        .lesson:hover {
+            border-color: #b5caff;
+            transform: translateY(-2px);
+        }
+
+        .lesson-time {
+            color: #2463eb;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .lesson-time span {
+            display: block;
+            font-size: 12px;
+            color: #a0a9ba;
+            font-weight: normal;
+            margin-top: 5px;
+        }
+
+        .lesson-info h4 {
+            font-size: 15px;
+            margin-bottom: 8px;
+        }
+
+        .lesson-info p {
+            font-size: 13px;
+            color: #8994a8;
+            margin-top: 4px;
+        }
+
+        .lesson-type {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 7px;
+            font-size: 11px;
+            font-weight: bold;
+            background: #edf3ff;
+            color: #2463eb;
+        }
+
+        .practice {
+            background: #e9f8f0;
+            color: #23945c;
+        }
+
+        .lab {
+            background: #fff4e5;
+            color: #d58a20;
+        }
+
+        .room {
+            text-align: right;
+            color: #68758c;
+            font-size: 13px;
+        }
+
+        .room strong {
+            display: block;
+            color: #25324b;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 55px 15px;
+            color: #8994a8;
+        }
+
+        .empty-icon {
+            font-size: 38px;
+            margin-bottom: 15px;
+        }
+
+        .note {
+            margin-top: 22px;
+            padding: 15px 18px;
+            background: #f0f5ff;
+            color: #61769d;
+            border-radius: 12px;
+            font-size: 13px;
+        }
+
+        @media (max-width: 850px) {
+            .sidebar {
+                width: 190px;
+                padding: 22px 12px;
+            }
+
+            .main {
+                margin-left: 190px;
+                width: calc(100% - 190px);
+                padding: 25px 20px;
+            }
+
+            .lesson {
+                grid-template-columns: 75px 1fr;
+            }
+
+            .room {
+                grid-column: 2;
+                text-align: left;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .sidebar {
+                width: 65px;
+                padding: 20px 7px;
+            }
+
+            .logo {
+                justify-content: center;
+            }
+
+            .logo span,
+            .menu-title,
+            .menu a .menu-text {
+                display: none;
+            }
+
+            .menu a {
+                justify-content: center;
+                padding: 13px 5px;
+                font-size: 19px;
+            }
+
+            .main {
+                margin-left: 65px;
+                width: calc(100% - 65px);
+                padding: 20px 12px;
+            }
+
+            .topbar h1 {
+                font-size: 22px;
+            }
+
+            .user {
+                display: none;
+            }
+
+            .schedule-panel {
+                padding: 15px;
+            }
+
+            .week {
+                gap: 5px;
+            }
+
+            .day {
+                padding: 12px 3px;
+            }
+
+            .day-name {
+                font-size: 10px;
+            }
+
+            .day-date {
+                font-size: 16px;
+            }
+
+            .lesson {
+                gap: 12px;
+                padding: 13px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="layout">
+
+    <!-- Боковое меню -->
+    <aside class="sidebar">
+
+        <div class="logo">
+            <img src="dgtu-logo.png" alt="ДГТУ">
+            <span>MyUni</span>
+        </div>
+
+        <div class="menu-title">ГЛАВНОЕ МЕНЮ</div>
+
+        <nav class="menu">
+            <a href="home.html">
+                <span>⌂</span>
+                <span class="menu-text">Главная</span>
+            </a>
+
+            <a href="schedule.html" class="active">
+                <span>▦</span>
+                <span class="menu-text">Расписание</span>
+            </a>
+
+            <a href="saved.html">
+                <span>♡</span>
+                <span class="menu-text">Сохранённое</span>
+            </a>
+
+            <a href="appeals.html">
+                <span>✉</span>
+                <span class="menu-text">Обращения</span>
+            </a>
+
+            <a href="settings.html">
+                <span>⚙</span>
+                <span class="menu-text">Настройки</span>
+            </a>
+        </nav>
+
+    </aside>
+
+    <!-- Основная часть -->
+    <main class="main">
+
+        <div class="topbar">
+            <h1>Расписание</h1>
+            <div class="user">🎓 Студент ДГТУ</div>
+        </div>
+
+        <div class="welcome">
+            <h2>Твоя учебная неделя</h2>
+            <p>Следи за занятиями и планируй своё время.</p>
+        </div>
+
+        <section class="schedule-panel">
+
+            <div class="panel-header">
+                <h3>Учебная неделя</h3>
+                <button class="today-btn" id="todayBtn">Сегодня</button>
+            </div>
+
+            <div class="week" id="week"></div>
+
+            <div class="day-heading">
+                <h3 id="selectedDay">Понедельник</h3>
+                <span class="lesson-count" id="lessonCount"></span>
+            </div>
+
+            <div id="lessons"></div>
+
+            <div class="note">
+                💡 Расписание пока демонстрационное. Позже мы подключим
+                реальные данные из backend или источник расписания университета.
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<script>
+    // Названия дней недели
+    const days = [
+        "Понедельник",
+        "Вторник",
+        "Среда",
+        "Четверг",
+        "Пятница"
+    ];
+
+    const shortDays = ["ПН", "ВТ", "СР", "ЧТ", "ПТ"];
+
+    // Демонстрационные занятия
+    const schedule = {
+        0: [
+            {
+                start: "09:00",
+                end: "10:30",
+                subject: "Программирование",
+                teacher: "Иванов И.И.",
+                type: "Лекция",
+                room: "Ауд. 214",
+                building: "Главный корпус"
+            },
+            {
+                start: "10:45",
+                end: "12:15",
+                subject: "Математический анализ",
+                teacher: "Петрова А.С.",
+                type: "Практика",
+                room: "Ауд. 305",
+                building: "Главный корпус"
+            },
+            {
+                start: "13:00",
+                end: "14:30",
+                subject: "Базы данных",
+                teacher: "Сидоров Д.В.",
+                type: "Лабораторная",
+                room: "Ауд. 412",
+                building: "Корпус № 2"
+            }
+        ],
+
+        1: [
+            {
+                start: "09:00",
+                end: "10:30",
+                subject: "Дискретная математика",
+                teacher: "Смирнова Е.В.",
+                type: "Лекция",
+                room: "Ауд. 201",
+                building: "Главный корпус"
+            },
+            {
+                start: "10:45",
+                end: "12:15",
+                subject: "Веб-разработка",
+                teacher: "Иванов И.И.",
+                type: "Практика",
+                room: "Ауд. 318",
+                building: "Корпус № 2"
+            }
+        ],
+
+        2: [
+            {
+                start: "09:00",
+                end: "10:30",
+                subject: "Операционные системы",
+                teacher: "Кузнецов А.А.",
+                type: "Лекция",
+                room: "Ауд. 110",
+                building: "Главный корпус"
+            },
+            {
+                start: "10:45",
+                end: "12:15",
+                subject: "Базы данных",
+                teacher: "Сидоров Д.В.",
+                type: "Лабораторная",
+                room: "Ауд. 412",
+                building: "Корпус № 2"
+            },
+            {
+                start: "13:00",
+                end: "14:30",
+                subject: "Английский язык",
+                teacher: "Михайлова Н.В.",
+                type: "Практика",
+                room: "Ауд. 225",
+                building: "Главный корпус"
+            }
+        ],
+
+        3: [
+            {
+                start: "10:45",
+                end: "12:15",
+                subject: "Теория алгоритмов",
+                teacher: "Петрова А.С.",
+                type: "Лекция",
+                room: "Ауд. 303",
+                building: "Главный корпус"
+            },
+            {
+                start: "13:00",
+                end: "14:30",
+                subject: "Веб-разработка",
+                teacher: "Иванов И.И.",
+                type: "Лабораторная",
+                room: "Ауд. 318",
+                building: "Корпус № 2"
+            }
+        ],
+
+        4: [
+            {
+                start: "09:00",
+                end: "10:30",
+                subject: "Физическая культура",
+                teacher: "Орлов С.П.",
+                type: "Практика",
+                room: "Спортзал",
+                building: "Спортивный корпус"
+            },
+            {
+                start: "10:45",
+                end: "12:15",
+                subject: "Программирование",
+                teacher: "Иванов И.И.",
+                type: "Практика",
+                room: "Ауд. 214",
+                building: "Главный корпус"
+            }
+        ]
+    };
+
+    const weekElement = document.getElementById("week");
+    const lessonsElement = document.getElementById("lessons");
+    const selectedDayElement = document.getElementById("selectedDay");
+    const lessonCountElement = document.getElementById("lessonCount");
+
+    // Получаем понедельник текущей недели
+    function getMonday() {
+        const date = new Date();
+        const day = date.getDay();
+
+        const difference = day === 0 ? -6 : 1 - day;
+
+        date.setDate(date.getDate() + difference);
+        date.setHours(0, 0, 0, 0);
+
+        return date;
+    }
+
+    const monday = getMonday();
+
+    let selectedIndex = Math.min(
+        Math.max(new Date().getDay() - 1, 0),
+        4
+    );
+
+    // Создаём кнопки дней недели
+    function renderWeek() {
+        weekElement.innerHTML = "";
+
+        days.forEach((day, index) => {
+            const date = new Date(monday);
+            date.setDate(monday.getDate() + index);
+
+            const button = document.createElement("button");
+            button.className = "day";
+
+            if (index === selectedIndex) {
+                button.classList.add("active");
+            }
+
+            button.innerHTML = `
+                <div class="day-name">${shortDays[index]}</div>
+                <div class="day-date">${date.getDate()}</div>
+            `;
+
+            button.addEventListener("click", () => {
+                selectedIndex = index;
+                renderWeek();
+                renderLessons();
+            });
+
+            weekElement.appendChild(button);
+        });
+    }
+
+    // Показываем занятия выбранного дня
+    function renderLessons() {
+        selectedDayElement.textContent = days[selectedIndex];
+
+        const lessons = schedule[selectedIndex] || [];
+
+        lessonCountElement.textContent =
+            "Занятий: " + lessons.length;
+
+        lessonsElement.innerHTML = "";
+
+        if (lessons.length === 0) {
+            lessonsElement.innerHTML = `
+                <div class="empty">
+                    <div class="empty-icon">☀️</div>
+                    <h3>Сегодня занятий нет</h3>
+                    <p>Можно посвятить время отдыху или личным делам.</p>
+                </div>
+            `;
+            return;
+        }
+
+        lessons.forEach(lesson => {
+            let typeClass = "";
+
+            if (lesson.type === "Практика") {
+                typeClass = "practice";
+            }
+
+            if (lesson.type === "Лабораторная") {
+                typeClass = "lab";
+            }
+
+            const card = document.createElement("div");
+            card.className = "lesson";
+
+            card.innerHTML = `
+                <div class="lesson-time">
+                    ${lesson.start}
+                    <span>${lesson.end}</span>
+                </div>
+
+                <div class="lesson-info">
+                    <h4>${lesson.subject}</h4>
+                    <span class="lesson-type ${typeClass}">
+                        ${lesson.type}
+                    </span>
+                    <p>Преподаватель: ${lesson.teacher}</p>
+                </div>
+
+                <div class="room">
+                    <strong>${lesson.room}</strong>
+                    ${lesson.building}
+                </div>
+            `;
+
+            lessonsElement.appendChild(card);
+        });
+    }
+
+    // Кнопка перехода к сегодняшнему дню
+    document.getElementById("todayBtn").addEventListener("click", () => {
+        const today = new Date().getDay();
+
+        selectedIndex = today >= 1 && today <= 5 ? today - 1 : 0;
+
+        renderWeek();
+        renderLessons();
+    });
+
+    // Первоначальная загрузка
+    renderWeek();
+    renderLessons();
+
+</script>
+
+</body>
+</html>

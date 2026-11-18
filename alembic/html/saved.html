@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сохранённое — MyUni</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fb;
+            color: #24324a;
+        }
+
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Левое меню */
+
+        .sidebar {
+            width: 235px;
+            background: white;
+            border-right: 1px solid #e9edf3;
+            padding: 28px 18px;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+        }
+
+        .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 35px;
+}
+
+.logo img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.logo-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.logo-name {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2878e8;
+}
+
+.logo-description {
+    font-size: 9px;
+    line-height: 1.35;
+    color: #8993a5;
+}
+
+        .menu-title {
+            color: #a0aaba;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 0 12px;
+            margin-bottom: 13px;
+        }
+
+        .menu {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 13px 12px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: #69778d;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+
+        .menu a:hover,
+        .menu a.active {
+            background: #edf4ff;
+            color: #2878e5;
+        }
+
+        .menu-icon {
+            width: 21px;
+            text-align: center;
+            font-size: 17px;
+        }
+
+        .sidebar-bottom {
+            position: absolute;
+            bottom: 25px;
+            left: 18px;
+            right: 18px;
+        }
+
+        /* Основная область */
+
+        .main {
+            width: calc(100% - 235px);
+            margin-left: 235px;
+            padding: 32px 40px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 26px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: #8491a5;
+        }
+
+        .counter {
+            background: #edf4ff;
+            color: #2878e5;
+            padding: 11px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        /* Поиск */
+
+        .search {
+            max-width: 470px;
+            margin-bottom: 25px;
+        }
+
+        .search input {
+            width: 100%;
+            padding: 14px 17px;
+            border: 1px solid #e1e7f0;
+            border-radius: 11px;
+            background: white;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search input:focus {
+            border-color: #2878e5;
+        }
+
+        /* Фильтры */
+
+        .filters {
+            display: flex;
+            gap: 9px;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+        }
+
+        .filter {
+            padding: 9px 15px;
+            border: 1px solid #e1e7f0;
+            border-radius: 20px;
+            background: white;
+            color: #69778d;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .filter:hover,
+        .filter.active {
+            background: #2878e5;
+            border-color: #2878e5;
+            color: white;
+        }
+
+        /* Карточки */
+
+        .feed {
+            columns: 3 230px;
+            column-gap: 20px;
+        }
+
+        .post-card {
+            display: inline-block;
+            width: 100%;
+            margin-bottom: 20px;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 3px 15px rgba(30, 65, 110, 0.04);
+            break-inside: avoid;
+        }
+
+        .post-image {
+            width: 100%;
+            display: block;
+            object-fit: cover;
+            max-height: 260px;
+        }
+
+        .post-content {
+            padding: 17px;
+        }
+
+        .post-category {
+            display: inline-block;
+            color: #2878e5;
+            background: #edf4ff;
+            padding: 6px 9px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-bottom: 11px;
+        }
+
+        .post-title {
+            font-size: 16px;
+            line-height: 1.4;
+            margin-bottom: 9px;
+        }
+
+        .post-description {
+            font-size: 13px;
+            color: #8491a5;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .post-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .post-date {
+            font-size: 11px;
+            color: #a0aaba;
+        }
+
+        .remove-button {
+            border: none;
+            background: #fff0f0;
+            color: #d34b4b;
+            border-radius: 8px;
+            padding: 8px 11px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        /* Пустое состояние */
+
+        .empty-message {
+            display: none;
+            background: white;
+            border-radius: 15px;
+            padding: 55px 20px;
+            text-align: center;
+        }
+
+        .empty-icon {
+            font-size: 42px;
+            margin-bottom: 15px;
+            color: #2878e5;
+        }
+
+        .empty-message h2 {
+            font-size: 19px;
+            margin-bottom: 10px;
+        }
+
+        .empty-message p {
+            font-size: 14px;
+            color: #8491a5;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .home-button {
+            display: inline-block;
+            background: #2878e5;
+            color: white;
+            text-decoration: none;
+            padding: 12px 18px;
+            border-radius: 9px;
+            font-size: 13px;
+        }
+
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 190px;
+            }
+
+            .main {
+                width: calc(100% - 190px);
+                margin-left: 190px;
+                padding: 25px;
+            }
+        }
+
+        @media (max-width: 650px) {
+            .sidebar {
+                position: static;
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #e9edf3;
+                padding: 15px;
+            }
+
+            .layout {
+                display: block;
+            }
+
+            .logo {
+                margin-bottom: 15px;
+            }
+
+            .menu-title,
+            .sidebar-bottom {
+                display: none;
+            }
+
+            .menu {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .menu a {
+                padding: 9px;
+                font-size: 12px;
+            }
+
+            .main {
+                width: 100%;
+                margin-left: 0;
+                padding: 22px 15px;
+            }
+
+            .feed {
+                columns: 2 140px;
+                column-gap: 12px;
+            }
+
+            .header {
+                align-items: flex-start;
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="layout">
+
+    <!-- Левое меню -->
+
+    <aside class="sidebar">
+
+        <div class="logo">
+    <img src="dgtu-logo.png" alt="Логотип ДГТУ">
+
+    <div class="logo-text">
+        <span class="logo-name">MyUni.</span>
+        <span class="logo-description">
+            Донской государственный<br>
+            технический университет
+        </span>
+    </div>
+</div>
+
+        <p class="menu-title">Основное меню</p>
+
+        <nav class="menu">
+
+            <a href="home.html">
+                <span class="menu-icon">⌂</span>
+                Главная
+            </a>
+
+            <a href="schedule.html">
+                <span class="menu-icon">▦</span>
+                Расписание
+            </a>
+
+            <a href="saved.html" class="active">
+                <span class="menu-icon">♡</span>
+                Сохранённое
+            </a>
+
+            <a href="appeals.html">
+                <span class="menu-icon">✉</span>
+                Обращения
+            </a>
+
+            <a href="settings.html">
+                <span class="menu-icon">⚙</span>
+                Настройки
+            </a>
+
+        </nav>
+
+        <div class="sidebar-bottom">
+            <nav class="menu">
+                <a href="login.html">
+                    <span class="menu-icon">↪</span>
+                    Выйти
+                </a>
+            </nav>
+        </div>
+
+    </aside>
+
+
+    <!-- Основная часть -->
+
+    <main class="main">
+
+        <header class="header">
+
+            <div>
+                <h1>Сохранённое</h1>
+                <p>Здесь собраны публикации, которые вы сохранили.</p>
+            </div>
+
+            <div class="counter" id="counter">
+                0 публикаций
+            </div>
+
+        </header>
+
+
+        <!-- Поиск -->
+
+        <div class="search">
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="Найти сохранённую публикацию..."
+            >
+        </div>
+
+
+        <!-- Категории -->
+
+        <div class="filters">
+
+            <button class="filter active" data-category="all">
+                Все
+            </button>
+
+            <button class="filter" data-category="sport">
+                Спорт
+            </button>
+
+            <button class="filter" data-category="science">
+                Наука
+            </button>
+
+            <button class="filter" data-category="social">
+                Общественная жизнь
+            </button>
+
+            <button class="filter" data-category="culture">
+                Творчество
+            </button>
+
+            <button class="filter" data-category="student">
+                Студсовет
+            </button>
+
+            <button class="filter" data-category="career">
+                Карьера
+            </button>
+
+        </div>
+
+
+        <!-- Сохранённые карточки -->
+
+        <section class="feed" id="feed"></section>
+
+
+        <!-- Сообщение, если ничего не сохранено -->
+
+        <section class="empty-message" id="emptyMessage">
+
+            <div class="empty-icon">♡</div>
+
+            <h2>Пока здесь пусто</h2>
+
+            <p>
+                Сохраняйте интересные публикации из главной ленты,
+                чтобы быстро находить их здесь.
+            </p>
+
+            <a href="home.html" class="home-button">
+                Перейти к публикациям
+            </a>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<script>
+
+    // Демонстрационные публикации.
+    // Они должны соответствовать публикациям из home.html.
+
+    const posts = [
+
+        {
+            id: 1,
+            title: "Студенческая жизнь университета",
+            category: "social",
+            categoryName: "Общественная жизнь",
+            description: "Знакомьтесь с университетскими инициативами, новыми проектами и возможностями для студентов.",
+            date: "18 ноября 2026",
+            image: "https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=700"
+        },
+
+        {
+            id: 2,
+            title: "Спортивные соревнования",
+            category: "sport",
+            categoryName: "Спорт",
+            description: "Узнайте о спортивных событиях, соревнованиях и возможностях представлять свой факультет.",
+            date: "17 ноября 2026",
+            image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=700"
+        },
+
+        {
+            id: 3,
+            title: "Новые возможности для обучения",
+            category: "science",
+            categoryName: "Наука и образование",
+            description: "Образовательные проекты, научные встречи и новые возможности для развития.",
+            date: "16 ноября 2026",
+            image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=700"
+        },
+
+        {
+            id: 4,
+            title: "Творчество и студенческие проекты",
+            category: "culture",
+            categoryName: "Культура и творчество",
+            description: "Участвуйте в творческих проектах, концертах и культурных мероприятиях.",
+            date: "15 ноября 2026",
+            image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=700"
+        },
+
+        {
+            id: 5,
+            title: "Возможности студенческого самоуправления",
+            category: "student",
+            categoryName: "Студсовет",
+            description: "Студенческий совет — возможность влиять на университетскую жизнь и реализовывать свои идеи.",
+            date: "14 ноября 2026",
+            image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=700"
+        },
+
+        {
+            id: 6,
+            title: "Карьерные перспективы",
+            category: "career",
+            categoryName: "Карьера",
+            description: "Узнайте о стажировках, встречах с работодателями и профессиональном развитии.",
+            date: "13 ноября 2026",
+            image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=700"
+        },
+
+        {
+            id: 7,
+            title: "Научные исследования студентов",
+            category: "science",
+            categoryName: "Наука и образование",
+            description: "Узнайте, как принять участие в научных исследованиях и университетских проектах.",
+            date: "12 ноября 2026",
+            image: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=700"
+        },
+
+        {
+            id: 8,
+            title: "Командные мероприятия",
+            category: "social",
+            categoryName: "Общественная жизнь",
+            description: "Новые знакомства, совместные идеи и проекты, которые объединяют студентов.",
+            date: "11 ноября 2026",
+            image: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=700"
+        }
+
+    ];
+
+
+    // Получаем сохранённые ID из браузера
+
+    let savedPosts = JSON.parse(
+        localStorage.getItem("myUniSavedPosts") || "[]"
+    );
+
+
+    // Текущая категория
+
+    let currentCategory = "all";
+
+
+    // Находим элементы страницы
+
+    const feed = document.getElementById("feed");
+    const searchInput = document.getElementById("searchInput");
+    const emptyMessage = document.getElementById("emptyMessage");
+    const counter = document.getElementById("counter");
+
+
+    // Показываем сохранённые публикации
+
+    function renderSavedPosts() {
+
+        const searchText = searchInput.value.toLowerCase();
+
+        const filteredPosts = posts.filter(function(post) {
+
+            const isSaved = savedPosts.includes(post.id);
+
+            const matchesCategory =
+                currentCategory === "all" ||
+                post.category === currentCategory;
+
+            const matchesSearch =
+                post.title.toLowerCase().includes(searchText) ||
+                post.description.toLowerCase().includes(searchText);
+
+            return isSaved && matchesCategory && matchesSearch;
+
+        });
+
+
+        // Очищаем предыдущие карточки
+
+        feed.innerHTML = "";
+
+
+        // Обновляем количество сохранённых публикаций
+
+        counter.textContent =
+            savedPosts.length + " публикаций";
+
+
+        // Проверяем, есть ли карточки
+
+        if (filteredPosts.length === 0) {
+
+            feed.style.display = "none";
+            emptyMessage.style.display = "block";
+
+        } else {
+
+            feed.style.display = "block";
+            emptyMessage.style.display = "none";
+
+        }
+
+
+        // Создаём карточки
+
+        filteredPosts.forEach(function(post) {
+
+            const card = document.createElement("article");
+
+            card.className = "post-card";
+
+            card.innerHTML = `
+                <img
+                    class="post-image"
+                    src="${post.image}"
+                    alt="Изображение публикации"
+                    loading="lazy"
+                >
+
+                <div class="post-content">
+
+                    <span class="post-category">
+                        ${post.categoryName}
+                    </span>
+
+                    <h2 class="post-title">
+                        ${post.title}
+                    </h2>
+
+                    <p class="post-description">
+                        ${post.description}
+                    </p>
+
+                    <div class="post-footer">
+
+                        <span class="post-date">
+                            ${post.date}
+                        </span>
+
+                        <button
+                            class="remove-button"
+                            data-id="${post.id}"
+                        >
+                            ♥ Удалить
+                        </button>
+
+                    </div>
+
+                </div>
+            `;
+
+            feed.appendChild(card);
+
+        });
+
+    }
+
+
+    // Фильтрация по категориям
+
+    document.querySelectorAll(".filter").forEach(function(button) {
+
+        button.addEventListener("click", function() {
+
+            document.querySelectorAll(".filter").forEach(function(filter) {
+                filter.classList.remove("active");
+            });
+
+            button.classList.add("active");
+
+            currentCategory = button.dataset.category;
+
+            renderSavedPosts();
+
+        });
+
+    });
+
+
+    // Поиск
+
+    searchInput.addEventListener("input", renderSavedPosts);
+
+
+    // Удаление из сохранённого
+
+    feed.addEventListener("click", function(event) {
+
+        const button = event.target.closest(".remove-button");
+
+        if (!button) {
+            return;
+        }
+
+        const postId = Number(button.dataset.id);
+
+        savedPosts = savedPosts.filter(function(id) {
+            return id !== postId;
+        });
+
+        localStorage.setItem(
+            "myUniSavedPosts",
+            JSON.stringify(savedPosts)
+        );
+
+        renderSavedPosts();
+
+    });
+
+
+    // Первоначальная загрузка
+
+    renderSavedPosts();
+
+</script>
+
+</body>
+</html>
