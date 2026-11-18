@@ -44,3 +44,15 @@ async def test_three_profiles_and_publication(flow_env):
         assert result["profile_complete"] and result["items"][0]["id"] == key
         assert result["items"][0]["match_reasons"]
     assert len((await client.get(path + "/opportunities?view=all",headers=users[0])).json()["items"]) == 3
+    # Changing only interests must reorder the existing material without a model call.
+    profile["interest_ids"] = [ids["AI_DATA"]]
+    calls = env["provider"].calls
+    assert (await client.put(path + "/profile/student", headers=users[0], json=profile)).is_success
+    assert (await client.get(path + "/opportunities", headers=users[0])).json()["items"][0]["id"] == cards[1]
+    assert calls == env["provider"].calls
+    route = path + f"/staff/opportunities/{cards[1]}"
+    assert (await client.patch(route, headers=staff, json={"courses": [4]})).is_success
+    feed = (await client.get(path + "/opportunities", headers=users[0])).json()["items"]
+    assert cards[1] not in {row["id"] for row in feed}
+    assert (await client.patch(route, headers=staff, json={"status": "archived"})).is_success
+    assert (await client.get(path + f"/opportunities/{cards[1]}", headers=users[0])).status_code == 404
