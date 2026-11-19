@@ -1,0 +1,102 @@
+[
+  {
+    "source_url": "https://promo.yookassa.ru/mcphackaton",
+    "card": {
+      "status": "published",
+      "title": "Хакатон ЮKassa по платёжным ИИ-агентам",
+      "summary": "5–6 декабря разработчики создают решения для бизнеса с использованием MCP ЮKassa. Можно выступить самостоятельно или собрать команду до пяти человек.",
+      "type": "hackathon",
+      "topics": [
+        "AI_DATA"
+      ],
+      "format": "online",
+      "kind": "open_call",
+      "action_url": "https://promo.yookassa.ru/mcphackaton",
+      "deadline": "2026-12-04T23:59:59+03:00",
+      "conditions": "Для участников от 18 лет. Организатор проводит отбор заявок.",
+      "contact": "promo_support@yoomoney.ru"
+    }
+  },
+  {
+    "source_url": "https://vakandia.ru/vacancy/javascript-react-razrabotchik-stazher-175-4622557",
+    "card": {
+      "status": "published",
+      "title": "Стажировка JavaScript и React в Aston",
+      "summary": "Удалённое направление для начинающих фронтенд-разработчиков. Вакансия указана для Ростова-на-Дону. Проверьте текущий статус у работодателя.",
+      "type": "internship",
+      "topics": [
+        "FRONTEND"
+      ],
+      "format": "online",
+      "kind": "open_call",
+      "action_url": "https://hh.ru/vacancy/139570017",
+      "review_by": "2026-11-26T23:59:59+03:00",
+      "conditions": "Обучение в будни в течение рабочего дня по московскому времени."
+    }
+  },
+  {
+    "source_url": "https://stepik.org/course/58852/promo",
+    "card": {
+      "status": "published",
+      "title": "Основы Python на Stepik",
+      "summary": "Курс для начинающих из серии «Поколение Python». Практика программирования перед знакомством с серверной разработкой.",
+      "type": "learning",
+      "topics": [
+        "BACKEND"
+      ],
+      "format": "online",
+      "kind": "announcement",
+      "action_url": "https://stepik.org/course/58852/promo",
+      "review_by": "2027-01-15T12:00:00+03:00"
+    }
+  },
+  {
+    "source_url": "https://htmlacademy.ru/courses/basic-html-css",
+    "card": {
+      "status": "published",
+      "title": "Первый сайт на HTML и CSS",
+      "summary": "Интерактивный тренажёр HTML Academy для знакомства с разметкой страниц и стилями.",
+      "type": "learning",
+      "topics": [
+        "FRONTEND"
+      ],
+      "format": "online",
+      "kind": "announcement",
+      "action_url": "https://htmlacademy.ru/courses/basic-html-css",
+      "review_by": "2027-01-15T12:00:00+03:00"
+    }
+  },
+  {
+    "source_url": "https://contest.yandex.ru/tracks/ml/",
+    "card": {
+      "status": "published",
+      "title": "Машинное обучение с ШАД",
+      "summary": "Онлайн-учебник с математикой и практикой: от обучения с учителем до нейросетей. Подходит для углублённого изучения методов ML.",
+      "type": "learning",
+      "topics": [
+        "AI_DATA",
+        "RESEARCH"
+      ],
+      "format": "online",
+      "kind": "announcement",
+      "action_url": "https://contest.yandex.ru/tracks/ml/",
+      "review_by": "2027-01-15T12:00:00+03:00"
+    }
+  },
+  {
+    "source_url": "https://portswigger.net/web-security",
+    "card": {
+      "status": "published",
+      "title": "Основы безопасности веб-приложений",
+      "summary": "Бесплатные англоязычные учебные материалы Web Security Academy для знакомства с безопасностью веб-приложений.",
+      "type": "learning",
+      "topics": [
+        "SECURITY"
+      ],
+      "format": "online",
+      "kind": "announcement",
+      "action_url": "https://portswigger.net/web-security",
+      "review_by": "2027-01-15T12:00:00+03:00"
+    }
+  }
+]
