@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, HttpUrl
 
-OpportunityType = Literal["internship", "junior_job", "hackathon", "grant", "event"]
+OpportunityType = Literal["internship", "junior_job", "hackathon", "grant", "event", "learning"]
 PublicationState = Literal["draft", "published", "rejected", "archived"]
 
 

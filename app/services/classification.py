@@ -12,6 +12,7 @@ from app.models import Category, Post, RawContent, RawContentStatus, Tag, User
 from app.schemas.ai_classification import AIClassificationResult
 from app.services.ai_classifier import AIProvider, NVIDIAAIProvider
 from app.services.audience import normalize_audience
+from app.services.publication import classify_publication
 from app.services.normalization import normalize_classification
 
 IMPORTANCE_MAP = {
@@ -100,7 +101,7 @@ async def process_raw_content(
             raw.ai_result = json.loads(json.dumps(payload, default=str))
         result = validate_payload(payload)
         if result.opportunity is not None:
-            raw.opportunity_review = result.opportunity.model_dump(mode="json") | {"status": "draft"}
+            raw.opportunity_review = classify_publication(raw, result.opportunity).model_dump(mode="json")
             raw.status = RawContentStatus.PROCESSED.value
             raw.processing_error = None
             raw.processed_at = datetime.now(timezone.utc)

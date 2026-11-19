@@ -3,7 +3,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import HttpUrl, TypeAdapter, ValidationError
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +13,7 @@ from app.models import RawContent, StudentProfile, Tag
 from app.models.student_interest import student_interests
 from app.schemas.opportunity import ReviewedOpportunity, OpportunityType
 from app.services.university import audience_key
+from app.services.publication import active, publication_error
 
 router = APIRouter(tags=["opportunities"])
 staff = Depends(require_roles("staff", "admin"))
@@ -29,11 +30,6 @@ def draft(raw):
         except ValidationError:
             return ReviewedOpportunity()
     return ReviewedOpportunity.model_validate(data)
-
-
-def active(card, now):
-    cutoffs = [v for v in (card.deadline, card.event_cutoff(), card.review_by) if v]
-    return card.status == "published" and bool(cutoffs) and min(cutoffs) >= now
 
 
 def serialize(raw, card, reasons):
@@ -55,18 +51,12 @@ async def review(raw_id: int, changes: dict, _=staff, db: AsyncSession = Depends
         raise HTTPException(404, "Source not found")
     try:
         card = ReviewedOpportunity.model_validate(draft(raw).model_dump() | changes)
-        if card.status == "published":
-            TypeAdapter(HttpUrl).validate_python(raw.source_url)
     except ValidationError as exc:
         raise HTTPException(422, str(exc)) from exc
     if card.status == "published":
-        local = audience_key(card.city or "") == "ростов-на-дону"
-        if not (card.format == "online" or local and card.format in ("onsite", "hybrid")):
-            raise HTTPException(422, "Confirm online participation or Rostov venue")
-        if not (card.type and card.title and card.summary and card.kind in ("open_call", "announcement")
-                and (card.contact or card.action_url or card.instructions_in_source)
-                and active(card, datetime.now(timezone.utc))):
-            raise HTTPException(422, "Confirm content, next action and validity dates")
+        error = publication_error(card, raw.source_url)
+        if error:
+            raise HTTPException(422, error)
     raw.opportunity_review = card.model_dump(mode="json")
     await db.commit()
     return serialize(raw, card, [])
