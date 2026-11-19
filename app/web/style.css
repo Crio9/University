@@ -1,1 +1,206 @@
-:root{font-family:Inter,"Segoe UI",Arial,sans-serif;color:#172c45;background:#f5f7fb;line-height:1.45}*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0}header{background:white;border-bottom:1px solid #dce4ee}.bar,main{max-width:980px;margin:auto;padding:16px 24px}.bar,.brand,nav,.tabs{display:flex;align-items:center;gap:12px}.bar{justify-content:space-between}.brand{font-size:22px;font-weight:750}.brand img{width:46px;height:46px;object-fit:contain}main{padding-top:38px}h1{font-size:clamp(32px,5vw,52px);line-height:1.12;margin:0 0 22px;letter-spacing:-.04em}h2{font-size:26px;margin:0 0 20px}.split,.panel,article{background:white;border:1px solid #dce4ee;border-radius:20px}.split{display:grid;grid-template-columns:1fr 1fr;overflow:hidden}.welcome{background:linear-gradient(145deg,#123d70,#185a96);color:white;padding:48px 38px}.welcome h1{margin-top:70px}.welcome p{max-width:300px}.split form,.panel{padding:36px}.panel{max-width:640px;margin:auto}input,select,button{font:inherit}button,a{cursor:pointer}button{border:1px solid #bbcbdc;color:#143b64;background:white;border-radius:9px;padding:8px 13px}button:disabled{opacity:.55;cursor:wait}.primary,.tabs [aria-pressed=true]{background:#123d70;color:white;border-color:#123d70}.primary{padding:12px 18px}.link{border:none;text-decoration:underline;margin-left:6px}form>label{display:grid;gap:6px;margin-bottom:14px;font-weight:600}input:not([type=checkbox]),select{width:100%;padding:11px;border:1px solid #b9c8d9;border-radius:8px}fieldset{margin:18px 0;padding:10px;border:1px solid #cdd7e1;border-radius:8px}fieldset label{display:inline-flex;align-items:center;gap:5px;padding:5px 8px}#cards{display:grid;gap:12px}article{padding:22px}article h2{font-size:23px;margin:6px 0}article p{margin:8px 0}.meta,#count{font-size:14px;color:#50657a}.reason{color:#226247}a{color:#125795}#error{background:#ffefed;color:#81291d;padding:12px;border-radius:8px}#more{margin:12px 0}@media(max-width:620px){.split{grid-template-columns:1fr}.welcome,.split form,.panel{padding:22px}.welcome h1{margin-top:18px}.bar,main{padding:12px}nav{gap:4px}nav button{padding:6px;font-size:14px}}
+:root {
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  color: #172c45;
+  background: #f5f7fb;
+  line-height: 1.45;
+}
+* {
+  box-sizing: border-box;
+}
+[hidden] {
+  display: none !important;
+}
+body {
+  margin: 0;
+}
+header {
+  background: white;
+  border-bottom: 1px solid #dce4ee;
+}
+.bar,
+main {
+  max-width: 980px;
+  margin: auto;
+  padding: 16px 24px;
+}
+.bar,
+.brand,
+nav,
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.bar {
+  justify-content: space-between;
+}
+.brand {
+  font-size: 22px;
+  font-weight: 750;
+}
+.brand img {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+}
+main {
+  padding-top: 38px;
+}
+h1 {
+  font-size: clamp(32px, 5vw, 52px);
+  line-height: 1.12;
+  margin: 0 0 22px;
+  letter-spacing: -0.04em;
+}
+h2 {
+  font-size: 26px;
+  margin: 0 0 20px;
+}
+.split,
+.panel,
+article {
+  background: white;
+  border: 1px solid #dce4ee;
+  border-radius: 20px;
+}
+.split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+}
+.welcome {
+  background: linear-gradient(145deg, #123d70, #185a96);
+  color: white;
+  padding: 48px 38px;
+}
+.welcome h1 {
+  margin-top: 70px;
+}
+.welcome p {
+  max-width: 300px;
+}
+.split form,
+.panel {
+  padding: 36px;
+}
+.panel {
+  max-width: 640px;
+  margin: auto;
+}
+input,
+select,
+button {
+  font: inherit;
+}
+button,
+a {
+  cursor: pointer;
+}
+button {
+  border: 1px solid #bbcbdc;
+  color: #143b64;
+  background: white;
+  border-radius: 9px;
+  padding: 8px 13px;
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.primary,
+.tabs [aria-pressed="true"] {
+  background: #123d70;
+  color: white;
+  border-color: #123d70;
+}
+.primary {
+  padding: 12px 18px;
+}
+.link {
+  border: none;
+  text-decoration: underline;
+  margin-left: 6px;
+}
+form > label {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+input:not([type="checkbox"]),
+select {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #b9c8d9;
+  border-radius: 8px;
+}
+fieldset {
+  margin: 18px 0;
+  padding: 10px;
+  border: 1px solid #cdd7e1;
+  border-radius: 8px;
+}
+fieldset label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+}
+#cards {
+  display: grid;
+  gap: 12px;
+}
+article {
+  padding: 22px;
+}
+article h2 {
+  font-size: 23px;
+  margin: 6px 0;
+}
+article p {
+  margin: 8px 0;
+}
+.meta,
+#count {
+  font-size: 14px;
+  color: #50657a;
+}
+.reason {
+  color: #226247;
+}
+a {
+  color: #125795;
+}
+#error {
+  background: #ffefed;
+  color: #81291d;
+  padding: 12px;
+  border-radius: 8px;
+}
+#more {
+  margin: 12px 0;
+}
+@media (max-width: 620px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+  .welcome,
+  .split form,
+  .panel {
+    padding: 22px;
+  }
+  .welcome h1 {
+    margin-top: 18px;
+  }
+  .bar,
+  main {
+    padding: 12px;
+  }
+  nav {
+    gap: 4px;
+  }
+  nav button {
+    padding: 6px;
+    font-size: 14px;
+  }
+}
